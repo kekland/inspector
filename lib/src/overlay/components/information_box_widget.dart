@@ -14,10 +14,22 @@ class InformationBoxWidget extends StatelessWidget {
   }) {
     return InformationBoxWidget(
       key: key,
+      color: color,
       child: Text(
         '${size.width.toStringAsFixed(1)} × ${size.height.toStringAsFixed(1)}',
       ),
+    );
+  }
+
+  factory InformationBoxWidget.number({
+    Key? key,
+    required double number,
+    Color? color,
+  }) {
+    return InformationBoxWidget(
+      key: key,
       color: color,
+      child: Text(number.toStringAsFixed(1)),
     );
   }
 

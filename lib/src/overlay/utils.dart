@@ -1,20 +1,84 @@
 import 'package:flutter/widgets.dart';
 
-class BoxInfo {
-  final Rect rect;
-  final Rect? outerRect;
+Rect? getRectFromRenderBox(RenderBox renderBox) {
+  return renderBox.attached
+      ? renderBox.localToGlobal(Offset.zero) & renderBox.size
+      : null;
+}
 
+/// Contains information about the currently selected [RenderBox].
+///
+/// [containerRect] may be [null].
+class BoxInfo {
   BoxInfo({
-    required this.rect,
-    this.outerRect,
+    required this.targetRect,
+    this.containerRect,
   });
+
+  factory BoxInfo.fromRenderBoxes({
+    required RenderBox targetRenderBox,
+    RenderBox? containerRenderBox,
+  }) {
+    assert(targetRenderBox.attached);
+
+    return BoxInfo(
+      targetRect: getRectFromRenderBox(targetRenderBox)!,
+      containerRect: containerRenderBox != null
+          ? getRectFromRenderBox(containerRenderBox)
+          : null,
+    );
+  }
+
+  final Rect targetRect;
+  final Rect? containerRect;
+
+  double? get paddingLeft => paddingRectLeft?.width;
+  double? get paddingRight => paddingRectRight?.width;
+  double? get paddingTop => paddingRectTop?.height;
+  double? get paddingBottom => paddingRectBottom?.height;
+
+  Rect? get paddingRectLeft => containerRect != null
+      ? Rect.fromLTRB(
+          containerRect!.left,
+          containerRect!.top,
+          targetRect.left,
+          containerRect!.bottom,
+        )
+      : null;
+
+  Rect? get paddingRectTop => containerRect != null
+      ? Rect.fromLTRB(
+          targetRect.left,
+          containerRect!.top,
+          targetRect.right,
+          targetRect.top,
+        )
+      : null;
+
+  Rect? get paddingRectRight => containerRect != null
+      ? Rect.fromLTRB(
+          targetRect.right,
+          containerRect!.top,
+          containerRect!.right,
+          containerRect!.bottom,
+        )
+      : null;
+
+  Rect? get paddingRectBottom => containerRect != null
+      ? Rect.fromLTRB(
+          targetRect.left,
+          targetRect.bottom,
+          targetRect.right,
+          containerRect!.bottom,
+        )
+      : null;
 }
 
 double calculateBoxPosition({
   required Rect rect,
   required double height,
+  double padding = 8.0,
 }) {
-  final padding = 8.0;
   final preferredHeight = height;
 
   // Position when the overlay is placed inside the container

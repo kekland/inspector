@@ -18,42 +18,33 @@ class Inspector extends StatefulWidget {
 
 class _CurrentRenderBoxInformation {
   _CurrentRenderBoxInformation({
-    required this.renderBox,
-    this.outerRenderBox,
+    required this.targetRenderBox,
+    this.containerRenderBox,
   });
 
   factory _CurrentRenderBoxInformation.fromHitTestResults(
     Iterable<RenderBox> boxes,
   ) {
-    RenderBox? renderBox;
-    RenderBox? outerRenderBox;
+    RenderBox? targetRenderBox;
+    RenderBox? containerRenderBox;
 
     for (final box in boxes) {
-      renderBox ??= box;
+      targetRenderBox ??= box;
 
-      if (renderBox.size < box.size) {
-        outerRenderBox = box;
+      if (targetRenderBox.size < box.size) {
+        containerRenderBox = box;
         break;
       }
     }
 
     return _CurrentRenderBoxInformation(
-      renderBox: renderBox!,
-      outerRenderBox: outerRenderBox,
+      targetRenderBox: targetRenderBox!,
+      containerRenderBox: containerRenderBox,
     );
   }
 
-  final RenderBox renderBox;
-  final RenderBox? outerRenderBox;
-
-  Rect get renderBoxRect =>
-      renderBox.localToGlobal(Offset.zero) & renderBox.size;
-
-  Rect? get outerRenderBoxRect => outerRenderBox != null
-      ? outerRenderBox!.localToGlobal(Offset.zero) & outerRenderBox!.size
-      : null;
-
-  bool get attached => renderBox.attached;
+  final RenderBox targetRenderBox;
+  final RenderBox? containerRenderBox;
 }
 
 class _InspectorState extends State<Inspector> {
@@ -82,8 +73,8 @@ class _InspectorState extends State<Inspector> {
               LayoutBuilder(
             builder: (context, constraints) => InspectorOverlay(
               size: constraints.biggest,
-              renderBox: value?.renderBox,
-              outerRenderBox: value?.outerRenderBox,
+              targetRenderBox: value?.targetRenderBox,
+              containerRenderBox: value?.containerRenderBox,
             ),
           ),
         ),
