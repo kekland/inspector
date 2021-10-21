@@ -5,6 +5,8 @@ void main() {
   runApp(
     MaterialApp(
       home: ExampleApp(),
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.system,
       builder: (context, child) => Inspector(child: child!),
     ),
   );

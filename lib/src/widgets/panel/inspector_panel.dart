@@ -46,7 +46,7 @@ class _InspectorPanelState extends State<InspectorPanel> {
             mini: true,
             onPressed: _toggleVisibility,
             backgroundColor: Colors.white,
-            foregroundColor: Theme.of(context).primaryColor,
+            foregroundColor: Colors.black54,
             child: Icon(
               _isVisible ? Icons.chevron_right : Icons.chevron_left,
             ),
@@ -55,19 +55,19 @@ class _InspectorPanelState extends State<InspectorPanel> {
             const SizedBox(height: 16.0),
             FloatingActionButton(
               onPressed: _toggleInspectorState,
-              backgroundColor: Colors.white,
-              foregroundColor: widget.isInspectorEnabled
-                  ? Theme.of(context).primaryColor
-                  : Theme.of(context).disabledColor,
+              backgroundColor:
+                  widget.isInspectorEnabled ? Colors.blue : Colors.white,
+              foregroundColor:
+                  widget.isInspectorEnabled ? Colors.white : Colors.black54,
               child: const Icon(Icons.format_shapes),
             ),
             const SizedBox(height: 8.0),
             FloatingActionButton(
               onPressed: _toggleColorPickerState,
-              backgroundColor: Colors.white,
-              foregroundColor: widget.isColorPickerEnabled
-                  ? Theme.of(context).primaryColor
-                  : Theme.of(context).disabledColor,
+              backgroundColor:
+                  widget.isColorPickerEnabled ? Colors.blue : Colors.white,
+              foregroundColor:
+                  widget.isColorPickerEnabled ? Colors.white : Colors.black54,
               child: const Icon(Icons.palette),
             ),
           ] else

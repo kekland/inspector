@@ -54,6 +54,7 @@ class _CurrentRenderBoxInformation {
 }
 
 class _InspectorState extends State<Inspector> {
+  final _listenerKey = const ValueKey('listener-key');
   final _repaintBoundaryKey = GlobalKey();
   ui.Image? _image;
   ByteData? _byteData;
@@ -67,8 +68,12 @@ class _InspectorState extends State<Inspector> {
   final _selectedColorOffsetNotifier = ValueNotifier<Offset?>(null);
   final _selectedColorStateNotifier = ValueNotifier<Color?>(null);
 
-  void _onTap(Offset pointerOffset) {
+  void _onTap(Offset? pointerOffset) {
     if (_colorPickerStateNotifier.value) {
+      if (pointerOffset != null) {
+        _onHover(pointerOffset);
+      }
+
       _onColorPickerStateChanged(false);
     }
 
@@ -76,13 +81,14 @@ class _InspectorState extends State<Inspector> {
       return;
     }
 
+    if (pointerOffset == null) return;
+
     final boxes = InspectorUtils.onTap(context, pointerOffset);
     _currentRenderBoxNotifier.value =
         _CurrentRenderBoxInformation.fromHitTestResults(boxes);
   }
 
   void _onPointerMove(Offset pointerOffset) {
-    print(pointerOffset);
     if (_colorPickerStateNotifier.value) {
       _onHover(pointerOffset);
     }
@@ -185,10 +191,12 @@ class _InspectorState extends State<Inspector> {
               );
             }
 
-            return Listener(
-              onPointerDown: (e) {},
-              onPointerUp: (e) => _onTap(e.position),
-              onPointerMove: (e) => _onPointerMove(e.position),
+            return GestureDetector(
+              key: _listenerKey,
+              behavior: HitTestBehavior.translucent,
+              onTapUp: (e) => _onTap(e.globalPosition),
+              onPanUpdate: (e) => _onPointerMove(e.globalPosition),
+              onPanEnd: (e) => _onTap(null),
               child: _child,
             );
           },
