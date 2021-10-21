@@ -100,12 +100,17 @@ class _InspectorState extends State<Inspector> {
     }
 
     _inspectorStateNotifier.value = isEnabled;
+
+    if (isEnabled) {
+      _colorPickerStateNotifier.value = false;
+    }
   }
 
   void _onColorPickerStateChanged(bool isEnabled) {
     _colorPickerStateNotifier.value = isEnabled;
 
     if (isEnabled) {
+      _inspectorStateNotifier.value = false;
       WidgetsBinding.instance?.addPostFrameCallback((_) {
         _extractByteData();
       });
