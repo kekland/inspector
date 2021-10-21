@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:inspect/src/overlay/components/information_box_widget.dart';
-import 'package:inspect/src/overlay/components/overlay_painter.dart';
-import 'package:inspect/src/overlay/utils.dart';
+import '../utils.dart';
+import 'information_box_widget.dart';
+import 'overlay_painter.dart';
 
 class BoxInfoWidget extends StatelessWidget {
   const BoxInfoWidget({

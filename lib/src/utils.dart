@@ -1,4 +1,5 @@
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
@@ -40,4 +41,19 @@ class InspectorUtils {
         .map((v) => v.target)
         .cast<RenderBox>();
   }
+}
+
+String colorToHexString(Color color) {
+  final r = color.red.toRadixString(16).padLeft(2, '0');
+  final g = color.green.toRadixString(16).padLeft(2, '0');
+  final b = color.blue.toRadixString(16).padLeft(2, '0');
+
+  return '$r$g$b';
+}
+
+Color getTextColorOnBackground(Color background) {
+  final luminance = background.computeLuminance();
+
+  if (luminance > 0.5) return Colors.black;
+  return Colors.white;
 }

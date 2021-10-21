@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:inspect/src/overlay/utils.dart';
+import '../utils.dart';
 
 class OverlayPainter extends CustomPainter {
   OverlayPainter({

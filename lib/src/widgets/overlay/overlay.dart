@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:inspect/src/overlay/components/box_info_widget.dart';
-import 'package:inspect/src/overlay/utils.dart';
+import './components/box_info_widget.dart';
+import 'utils.dart';
 
 class InspectorOverlay extends StatefulWidget {
   const InspectorOverlay({
@@ -32,6 +32,8 @@ class _InspectorOverlayState extends State<InspectorOverlay> {
   }
 
   void _onTick(Duration? tick) {
+    if (!mounted) return;
+
     setState(() {});
 
     WidgetsBinding.instance?.scheduleFrameCallback(
