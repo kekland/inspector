@@ -122,25 +122,25 @@ void main() {
       expect(find.byIcon(Icons.palette), findsOneWidget);
     });
 
-    testWidgets('open panel golden test', (tester) async {
-      await tester.pumpWidget(_buildBody());
+    // testWidgets('open panel golden test', (tester) async {
+    //   await tester.pumpWidget(_buildBody());
 
-      await expectLater(
-        find.byType(InspectorPanel),
-        matchesGoldenFile('goldens/inspector_panel_open.png'),
-      );
-    });
+    //   await expectLater(
+    //     find.byType(InspectorPanel),
+    //     matchesGoldenFile('goldens/inspector_panel_open.png'),
+    //   );
+    // });
 
-    testWidgets('closed panel golden test', (tester) async {
-      await tester.pumpWidget(_buildBody());
-      await tester.tap(find.byIcon(Icons.chevron_right));
-      await tester.pump();
+    // testWidgets('closed panel golden test', (tester) async {
+    //   await tester.pumpWidget(_buildBody());
+    //   await tester.tap(find.byIcon(Icons.chevron_right));
+    //   await tester.pump();
 
-      await expectLater(
-        find.byType(InspectorPanel),
-        matchesGoldenFile('goldens/inspector_panel_closed.png'),
-      );
-    });
+    //   await expectLater(
+    //     find.byType(InspectorPanel),
+    //     matchesGoldenFile('goldens/inspector_panel_closed.png'),
+    //   );
+    // });
   });
 
   group('Widget inspector', () {
@@ -193,25 +193,25 @@ void main() {
       expect(find.text('50.0, 150.0, 50.0, 150.0'), findsOneWidget);
     });
 
-    testWidgets('hit-test result golden test', (tester) async {
-      await tester.pumpWidget(_buildBody());
-      await tester.tap(find.byIcon(Icons.format_shapes));
-      await tester.pump();
+    // testWidgets('hit-test result golden test', (tester) async {
+    //   await tester.pumpWidget(_buildBody());
+    //   await tester.tap(find.byIcon(Icons.format_shapes));
+    //   await tester.pump();
 
-      final container =
-          tester.renderObject(find.byKey(_containerKey)) as RenderBox;
+    //   final container =
+    //       tester.renderObject(find.byKey(_containerKey)) as RenderBox;
 
-      final position =
-          (container.localToGlobal(Offset.zero) & container.size).center;
+    //   final position =
+    //       (container.localToGlobal(Offset.zero) & container.size).center;
 
-      await tester.tapAt(position);
-      await tester.pump();
+    //   await tester.tapAt(position);
+    //   await tester.pump();
 
-      await expectLater(
-        find.byType(BoxInfoPanelWidget),
-        matchesGoldenFile('./goldens/box_info_panel_widget.png'),
-      );
-    });
+    //   await expectLater(
+    //     find.byType(BoxInfoPanelWidget),
+    //     matchesGoldenFile('./goldens/box_info_panel_widget.png'),
+    //   );
+    // });
   });
 
   // group('Color picker', () {
