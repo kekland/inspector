@@ -1,6 +1,8 @@
 # inspector
 
-<img src="./img/inspector.png" width="100%">
+![Pub Version](https://img.shields.io/pub/v/inspector?label=pub)
+
+<img src="https://github.com/kekland/inspector/raw/master/img/inspector.png" width="100%">
 
 > Made as a proof of concept.
 
@@ -49,8 +51,8 @@ or tap on the pixel to get its color.
 ## Examples
 
 <p align="middle">
-  <img src="./img/screenshot-1.png" width="48%">
-  <img src="./img/screenshot-2.png" width="48%">
+  <img src="https://github.com/kekland/inspector/raw/master/img/screenshot-1.png" width="48%">
+  <img src="https://github.com/kekland/inspector/raw/master/img/screenshot-2.png" width="48%">
 </p>
 
 ## Contact me
