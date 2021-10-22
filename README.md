@@ -13,6 +13,18 @@ Inspired by [inspx](https://github.com/raunofreiberg/inspx).
 
 Warning, the development of this package is still in progress and some things may break your app.
 
+## Features
+
+<img align="right" src="https://github.com/kekland/inspector/raw/master/img/example.gif" width="200px">
+
+- [x] Color picker
+- [x] Size inspection
+- [x] Padding inspection
+- [ ] `BorderRadius` inspection
+- [ ] `TextStyle` inspection 
+
+<br clear="right"/>
+
 ## Installing
 
 Add the dependency: 
