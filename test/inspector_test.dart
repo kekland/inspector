@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inspector/inspector.dart';
@@ -163,6 +164,33 @@ void main() {
       expect(getButton().foregroundColor, Colors.white);
 
       await tester.tap(find.byIcon(Icons.format_shapes));
+      await tester.pump();
+
+      expect(getButton().backgroundColor, Colors.white);
+      expect(getButton().foregroundColor, Colors.black54);
+    });
+
+    testWidgets('can be toggled via keyboard shortcut', (tester) async {
+      await tester.pumpWidget(_buildBody());
+
+      final finder = find.ancestor(
+        of: find.byIcon(Icons.format_shapes),
+        matching: find.byType(FloatingActionButton),
+      );
+
+      FloatingActionButton getButton() =>
+          tester.widget(finder) as FloatingActionButton;
+
+      expect(getButton().backgroundColor, Colors.white);
+      expect(getButton().foregroundColor, Colors.black54);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.alt);
+      await tester.pump();
+
+      expect(getButton().backgroundColor, Colors.blue);
+      expect(getButton().foregroundColor, Colors.white);
+
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.alt);
       await tester.pump();
 
       expect(getButton().backgroundColor, Colors.white);
