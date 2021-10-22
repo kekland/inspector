@@ -273,12 +273,11 @@ class _InspectorState extends State<Inspector> {
               );
             }
 
-            return GestureDetector(
+            return Listener(
               behavior: HitTestBehavior.translucent,
-              onTapUp: (e) => _onTap(e.globalPosition),
-              onPanDown: (e) => _onPointerMove(e.globalPosition),
-              onPanUpdate: (e) => _onPointerMove(e.globalPosition),
-              onPanEnd: (e) => _onTap(null),
+              onPointerUp: (e) => _onTap(e.position),
+              onPointerMove: (e) => _onPointerMove(e.position),
+              onPointerDown: (e) => _onPointerMove(e.position),
               child: _child,
             );
           },
