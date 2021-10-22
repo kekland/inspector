@@ -7,7 +7,7 @@
 
 A Flutter package for inspecting widgets. Also comes with an eyedropper functionality. Useful for debugging widgets and for QA testing.
 
-Supports keyboard shortcuts for fast access.
+Supports keyboard shortcuts if you're using a physical keyboard.
 
 Inspired by [inspx](https://github.com/raunofreiberg/inspx).
 
