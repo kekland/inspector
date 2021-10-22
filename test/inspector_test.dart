@@ -4,37 +4,35 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inspector/inspector.dart';
-import 'package:inspector/src/widgets/color_picker/color_picker_overlay.dart';
-import 'package:inspector/src/widgets/color_picker/utils.dart';
 import 'package:inspector/src/widgets/components/box_info_panel_widget.dart';
 import 'package:inspector/src/widgets/panel/inspector_panel.dart';
 
-class _ColorPickerTestPainter extends CustomPainter {
-  static Color localPositionToColor({
-    required Offset offset,
-    required Size size,
-  }) {
-    return Color.lerp(Colors.blue, Colors.red,
-        (offset.dx + offset.dy) / (size.width + size.height))!;
-  }
+// class _ColorPickerTestPainter extends CustomPainter {
+//   static Color localPositionToColor({
+//     required Offset offset,
+//     required Size size,
+//   }) {
+//     return Color.lerp(Colors.blue, Colors.red,
+//         (offset.dx + offset.dy) / (size.width + size.height))!;
+//   }
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    for (var x = 0.0; x < size.width; x++) {
-      for (var y = 0.0; y < size.height; y++) {
-        final position = Offset(x, y);
+//   @override
+//   void paint(Canvas canvas, Size size) {
+//     for (var x = 0.0; x < size.width; x++) {
+//       for (var y = 0.0; y < size.height; y++) {
+//         final position = Offset(x, y);
 
-        canvas.drawRect(
-          Rect.fromLTRB(x, y, x + 1, y + 1),
-          Paint()..color = localPositionToColor(offset: position, size: size),
-        );
-      }
-    }
-  }
+//         canvas.drawRect(
+//           Rect.fromLTRB(x, y, x + 1, y + 1),
+//           Paint()..color = localPositionToColor(offset: position, size: size),
+//         );
+//       }
+//     }
+//   }
 
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
+//   @override
+//   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+// }
 
 const _containerKey = ValueKey('container');
 Widget _buildBody() {
@@ -64,23 +62,23 @@ Widget _buildBody() {
   );
 }
 
-const _painterKey = ValueKey('container');
-Widget _buildColorPickerTestBody() {
-  return MaterialApp(
-    builder: (context, child) => Inspector(child: child!),
-    home: Scaffold(
-      backgroundColor: Colors.black,
-      body: SizedBox(
-        width: 200.0,
-        height: 200.0,
-        child: CustomPaint(
-          key: _painterKey,
-          painter: _ColorPickerTestPainter(),
-        ),
-      ),
-    ),
-  );
-}
+// const _painterKey = ValueKey('container');
+// Widget _buildColorPickerTestBody() {
+//   return MaterialApp(
+//     builder: (context, child) => Inspector(child: child!),
+//     home: Scaffold(
+//       backgroundColor: Colors.black,
+//       body: SizedBox(
+//         width: 200.0,
+//         height: 200.0,
+//         child: CustomPaint(
+//           key: _painterKey,
+//           painter: _ColorPickerTestPainter(),
+//         ),
+//       ),
+//     ),
+//   );
+// }
 
 void main() {
   group('Inspector', () {
