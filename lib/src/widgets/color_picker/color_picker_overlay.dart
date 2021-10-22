@@ -17,9 +17,13 @@ class ColorPickerOverlay extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(4.0),
-        border: Border.all(
-          color: Colors.black12,
-        ),
+        boxShadow: const [
+          BoxShadow(
+            blurRadius: 12.0,
+            color: Colors.black12,
+            offset: Offset(0.0, 8.0),
+          )
+        ]
       ),
       alignment: Alignment.bottomRight,
       child: Material(

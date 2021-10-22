@@ -9,6 +9,8 @@ void showColorPickerResultSnackbar({
 }) {
   final colorString = '#${colorToHexString(color)}';
 
+  ScaffoldMessenger.of(context).clearSnackBars();
+
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Row(
