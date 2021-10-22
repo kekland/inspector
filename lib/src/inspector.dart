@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:inspector/src/keyboard_handler.dart';
 
 import './widgets/panel/inspector_panel.dart';
 import 'utils.dart';
@@ -24,14 +25,51 @@ import 'widgets/multi_value_listenable.dart';
 ///
 /// If [isEnabled] is [null], then [Inspector] is automatically disabled on
 /// production builds (i.e. [kReleaseMode] is [true]).
+///
+/// You can disable the widget inspector or the color picker by passing [false]
+/// to either [isWidgetInspectorEnabled] or [isColorPickerEnabled].
+///
+/// There are also keyboard shortcuts for the widget inspector and the color
+/// picker. By default, pressing **Shift** will enable the color picker, and
+/// pressing **Command** or **Alt** will enable the widget inspector. Those
+/// shortcuts can be changed through [widgetInspectorShortcuts] and
+/// [colorPickerShortcuts].
+///
+/// [isPanelVisible] controls the visibility of the control panel - setting it
+/// to [false] will hide the panel, but the other functionality can still be
+/// accessed through keyboard shortcuts. If you want to disable the inspector
+/// entirely, use [isEnabled].
 class Inspector extends StatefulWidget {
   const Inspector({
     Key? key,
     required this.child,
+    this.areKeyboardShortcutsEnabled = true,
+    this.isPanelVisible = true,
+    this.isWidgetInspectorEnabled = true,
+    this.isColorPickerEnabled = true,
+    this.widgetInspectorShortcuts = const [
+      LogicalKeyboardKey.alt,
+      LogicalKeyboardKey.altLeft,
+      LogicalKeyboardKey.altRight,
+      LogicalKeyboardKey.meta,
+      LogicalKeyboardKey.metaLeft,
+      LogicalKeyboardKey.metaRight,
+    ],
+    this.colorPickerShortcuts = const [
+      LogicalKeyboardKey.shift,
+      LogicalKeyboardKey.shiftLeft,
+      LogicalKeyboardKey.shiftRight,
+    ],
     this.isEnabled,
   }) : super(key: key);
 
   final Widget child;
+  final bool areKeyboardShortcutsEnabled;
+  final bool isPanelVisible;
+  final bool isWidgetInspectorEnabled;
+  final bool isColorPickerEnabled;
+  final List<LogicalKeyboardKey> widgetInspectorShortcuts;
+  final List<LogicalKeyboardKey> colorPickerShortcuts;
   final bool? isEnabled;
 
   @override
@@ -52,6 +90,24 @@ class _InspectorState extends State<Inspector> {
 
   final _selectedColorOffsetNotifier = ValueNotifier<Offset?>(null);
   final _selectedColorStateNotifier = ValueNotifier<Color?>(null);
+
+  late final KeyboardHandler _keyboardHandler;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _keyboardHandler = KeyboardHandler(
+      onInspectorStateChanged: _onInspectorStateChanged,
+      onColorPickerStateChanged: _onColorPickerStateChanged,
+      colorPickerStateKeys: widget.colorPickerShortcuts,
+      inspectorStateKeys: widget.widgetInspectorShortcuts,
+    );
+
+    if (_isEnabled && widget.areKeyboardShortcutsEnabled) {
+      _keyboardHandler.register();
+    }
+  }
 
   // Gestures
 
@@ -88,6 +144,11 @@ class _InspectorState extends State<Inspector> {
   // Inspector
 
   void _onInspectorStateChanged(bool isEnabled) {
+    if (!widget.isWidgetInspectorEnabled) {
+      _inspectorStateNotifier.value = false;
+      return;
+    }
+
     _inspectorStateNotifier.value = isEnabled;
 
     if (isEnabled) {
@@ -100,6 +161,11 @@ class _InspectorState extends State<Inspector> {
   // Color picker
 
   void _onColorPickerStateChanged(bool isEnabled) {
+    if (!widget.isColorPickerEnabled) {
+      _colorPickerStateNotifier.value = false;
+      return;
+    }
+
     _colorPickerStateNotifier.value = isEnabled;
 
     if (isEnabled) {
@@ -149,19 +215,36 @@ class _InspectorState extends State<Inspector> {
   }
 
   @override
-  void dispose() {
-    _image?.dispose();
-    _byteDataStateNotifier.value = null;
-    super.dispose();
+  void didUpdateWidget(covariant Inspector oldWidget) {
+    if (oldWidget.isEnabled != widget.isEnabled) {
+      if (_isEnabled && widget.areKeyboardShortcutsEnabled) {
+        _keyboardHandler.register();
+      } else {
+        _keyboardHandler.dispose();
+      }
+    }
+
+    super.didUpdateWidget(oldWidget);
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (widget.isEnabled == null && kReleaseMode) {
-      return widget.child;
-    }
+  void dispose() {
+    _image?.dispose();
+    _byteDataStateNotifier.value = null;
+    _keyboardHandler.dispose();
+    super.dispose();
+  }
 
-    if (widget.isEnabled != null && !widget.isEnabled!) {
+  /// The inspector is enabled if:
+  /// 1. [widget.isEnabled] is [null] and we're running in debug mode, or
+  /// 2. [widget.isEnabled] is [true]
+  bool get _isEnabled =>
+      (widget.isEnabled == null && !kReleaseMode) ||
+      (widget.isEnabled != null && widget.isEnabled!);
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isEnabled) {
       return widget.child;
     }
 
@@ -200,58 +283,63 @@ class _InspectorState extends State<Inspector> {
             );
           },
         ),
-        MultiValueListenableBuilder(
-          valueListenables: [
-            _selectedColorOffsetNotifier,
-            _selectedColorStateNotifier,
-          ],
-          builder: (context) {
-            final offset = _selectedColorOffsetNotifier.value;
-            final color = _selectedColorStateNotifier.value;
-
-            if (offset == null || color == null) return const SizedBox.shrink();
-
-            return Positioned(
-              left: offset.dx + 8.0,
-              top: offset.dy - 64.0,
-              child: ColorPickerOverlay(
-                color: color,
-              ),
-            );
-          },
-        ),
-        MultiValueListenableBuilder(
-          valueListenables: [
-            _currentRenderBoxNotifier,
-            _inspectorStateNotifier,
-          ],
-          builder: (context) => LayoutBuilder(
-            builder: (context, constraints) => _inspectorStateNotifier.value
-                ? InspectorOverlay(
-                    size: constraints.biggest,
-                    boxInfo: _currentRenderBoxNotifier.value,
-                  )
-                : const SizedBox.shrink(),
-          ),
-        ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: MultiValueListenableBuilder(
+        if (widget.isColorPickerEnabled)
+          MultiValueListenableBuilder(
             valueListenables: [
-              _inspectorStateNotifier,
-              _colorPickerStateNotifier,
-              _byteDataStateNotifier,
+              _selectedColorOffsetNotifier,
+              _selectedColorStateNotifier,
             ],
-            builder: (context) => InspectorPanel(
-              isInspectorEnabled: _inspectorStateNotifier.value,
-              isColorPickerEnabled: _colorPickerStateNotifier.value,
-              onInspectorStateChanged: _onInspectorStateChanged,
-              onColorPickerStateChanged: _onColorPickerStateChanged,
-              isColorPickerLoading: _byteDataStateNotifier.value == null &&
-                  _colorPickerStateNotifier.value,
+            builder: (context) {
+              final offset = _selectedColorOffsetNotifier.value;
+              final color = _selectedColorStateNotifier.value;
+
+              if (offset == null || color == null) {
+                return const SizedBox.shrink();
+              }
+
+              return Positioned(
+                left: offset.dx + 8.0,
+                top: offset.dy - 64.0,
+                child: ColorPickerOverlay(
+                  color: color,
+                ),
+              );
+            },
+          ),
+        if (widget.isWidgetInspectorEnabled)
+          MultiValueListenableBuilder(
+            valueListenables: [
+              _currentRenderBoxNotifier,
+              _inspectorStateNotifier,
+            ],
+            builder: (context) => LayoutBuilder(
+              builder: (context, constraints) => _inspectorStateNotifier.value
+                  ? InspectorOverlay(
+                      size: constraints.biggest,
+                      boxInfo: _currentRenderBoxNotifier.value,
+                    )
+                  : const SizedBox.shrink(),
             ),
           ),
-        ),
+        if (widget.isPanelVisible)
+          Align(
+            alignment: Alignment.centerRight,
+            child: MultiValueListenableBuilder(
+              valueListenables: [
+                _inspectorStateNotifier,
+                _colorPickerStateNotifier,
+                _byteDataStateNotifier,
+              ],
+              builder: (context) => InspectorPanel(
+                isInspectorEnabled: _inspectorStateNotifier.value,
+                isColorPickerEnabled: _colorPickerStateNotifier.value,
+                onInspectorStateChanged: _onInspectorStateChanged,
+                onColorPickerStateChanged: _onColorPickerStateChanged,
+                isColorPickerLoading: _byteDataStateNotifier.value == null &&
+                    _colorPickerStateNotifier.value,
+              ),
+            ),
+          ),
       ],
     );
   }
