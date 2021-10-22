@@ -1,6 +1,7 @@
 # inspector
 
 ![Pub Version](https://img.shields.io/pub/v/inspector?label=pub)
+[![Coverage Status](https://coveralls.io/repos/github/kekland/inspector/badge.svg?branch=master)](https://coveralls.io/github/kekland/inspector?branch=master)
 
 <img src="https://github.com/kekland/inspector/raw/master/img/inspector.png" width="100%">
 

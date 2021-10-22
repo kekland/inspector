@@ -4,8 +4,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inspector/inspector.dart';
-import 'package:inspector/src/widgets/components/box_info_panel_widget.dart';
-import 'package:inspector/src/widgets/panel/inspector_panel.dart';
 
 // class _ColorPickerTestPainter extends CustomPainter {
 //   static Color localPositionToColor({
