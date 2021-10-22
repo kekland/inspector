@@ -1,3 +1,7 @@
+## 1.0.5
+
+* Minor README changes
+
 ## 1.0.4
 
 * Enabling the inspector will absorb the pointers. This is done so that 
