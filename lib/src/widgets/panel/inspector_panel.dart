@@ -7,6 +7,7 @@ class InspectorPanel extends StatefulWidget {
     required this.isColorPickerEnabled,
     required this.onInspectorStateChanged,
     required this.onColorPickerStateChanged,
+    required this.isColorPickerLoading,
   }) : super(key: key);
 
   final bool isInspectorEnabled;
@@ -14,6 +15,8 @@ class InspectorPanel extends StatefulWidget {
 
   final bool isColorPickerEnabled;
   final ValueChanged<bool> onColorPickerStateChanged;
+
+  final bool isColorPickerLoading;
 
   @override
   _InspectorPanelState createState() => _InspectorPanelState();
@@ -68,7 +71,9 @@ class _InspectorPanelState extends State<InspectorPanel> {
                   widget.isColorPickerEnabled ? Colors.blue : Colors.white,
               foregroundColor:
                   widget.isColorPickerEnabled ? Colors.white : Colors.black54,
-              child: const Icon(Icons.palette),
+              child: widget.isColorPickerLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Icon(Icons.palette),
             ),
           ] else
             const SizedBox(height: 136.0),

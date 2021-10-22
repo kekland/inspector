@@ -18,7 +18,6 @@ Color getPixelFromByteData(
   return Color.fromARGB(a, r, g, b);
 }
 
-
 String colorToHexString(Color color) {
   final r = color.red.toRadixString(16).padLeft(2, '0');
   final g = color.green.toRadixString(16).padLeft(2, '0');

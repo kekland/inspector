@@ -16,6 +16,14 @@ import 'widgets/inspector/box_info.dart';
 import 'widgets/inspector/overlay.dart';
 import 'widgets/multi_value_listenable.dart';
 
+/// [Inspector] can wrap any [child], and will display its control panel and
+/// information overlay on top of that [child].
+///
+/// You should use [Inspector] as a wrapper to [WidgetsApp.builder] or
+/// [MaterialApp.builder].
+///
+/// If [isEnabled] is [null], then [Inspector] is automatically disabled on
+/// production builds (i.e. [kReleaseMode] is [true]).
 class Inspector extends StatefulWidget {
   const Inspector({
     Key? key,
@@ -33,7 +41,8 @@ class Inspector extends StatefulWidget {
 class _InspectorState extends State<Inspector> {
   final _repaintBoundaryKey = GlobalKey();
   ui.Image? _image;
-  ByteData? _byteData;
+
+  final _byteDataStateNotifier = ValueNotifier<ByteData?>(null);
 
   final _currentRenderBoxNotifier = ValueNotifier<BoxInfo?>(null);
 
@@ -102,7 +111,7 @@ class _InspectorState extends State<Inspector> {
 
       _image?.dispose();
       _image = null;
-      _byteData = null;
+      _byteDataStateNotifier.value = null;
 
       _selectedColorOffsetNotifier.value = null;
       _selectedColorStateNotifier.value = null;
@@ -114,17 +123,17 @@ class _InspectorState extends State<Inspector> {
         as RenderRepaintBoundary;
 
     _image = await boundary.toImage();
-    _byteData = await _image!.toByteData();
+    _byteDataStateNotifier.value = await _image!.toByteData();
   }
 
   void _onHover(Offset offset) {
-    if (_image == null || _byteData == null) return;
+    if (_image == null || _byteDataStateNotifier.value == null) return;
 
     final _x = offset.dx.round();
     final _y = offset.dy.round();
 
     _selectedColorStateNotifier.value = getPixelFromByteData(
-      _byteData!,
+      _byteDataStateNotifier.value!,
       width: _image!.width,
       x: _x,
       y: _y,
@@ -136,7 +145,7 @@ class _InspectorState extends State<Inspector> {
   @override
   void dispose() {
     _image?.dispose();
-    _byteData = null;
+    _byteDataStateNotifier.value = null;
     super.dispose();
   }
 
@@ -216,12 +225,15 @@ class _InspectorState extends State<Inspector> {
             valueListenables: [
               _inspectorStateNotifier,
               _colorPickerStateNotifier,
+              _byteDataStateNotifier,
             ],
             builder: (context) => InspectorPanel(
               isInspectorEnabled: _inspectorStateNotifier.value,
               isColorPickerEnabled: _colorPickerStateNotifier.value,
               onInspectorStateChanged: _onInspectorStateChanged,
               onColorPickerStateChanged: _onColorPickerStateChanged,
+              isColorPickerLoading: _byteDataStateNotifier.value == null &&
+                  _colorPickerStateNotifier.value,
             ),
           ),
         ),

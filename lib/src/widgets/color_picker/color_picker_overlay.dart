@@ -23,8 +23,8 @@ class ColorPickerOverlay extends StatelessWidget {
             blurRadius: 12.0,
             color: Colors.black12,
             offset: Offset(0.0, 8.0),
-          )
-        ]
+          ),
+        ],
       ),
       alignment: Alignment.bottomRight,
       child: Material(
