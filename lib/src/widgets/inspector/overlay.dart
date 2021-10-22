@@ -18,6 +18,8 @@ class InspectorOverlay extends StatefulWidget {
 }
 
 class _InspectorOverlayState extends State<InspectorOverlay> {
+  final _panelVisibilityNotifier = ValueNotifier<bool>(false);
+
   @override
   void initState() {
     super.initState();
@@ -52,8 +54,13 @@ class _InspectorOverlayState extends State<InspectorOverlay> {
       child: SizedBox(
         width: widget.size.width,
         height: widget.size.height,
-        child: BoxInfoWidget(
-          boxInfo: widget.boxInfo!,
+        child: ValueListenableBuilder(
+          valueListenable: _panelVisibilityNotifier,
+          builder: (context, bool isVisible, _) => BoxInfoWidget(
+            boxInfo: widget.boxInfo!,
+            isPanelVisible: isVisible,
+            onPanelVisibilityChanged: (v) => _panelVisibilityNotifier.value = v,
+          ),
         ),
       ),
     );

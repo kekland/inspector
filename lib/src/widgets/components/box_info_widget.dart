@@ -8,9 +8,14 @@ class BoxInfoWidget extends StatelessWidget {
   const BoxInfoWidget({
     Key? key,
     required this.boxInfo,
+    required this.isPanelVisible,
+    required this.onPanelVisibilityChanged,
   }) : super(key: key);
 
   final BoxInfo boxInfo;
+
+  final bool isPanelVisible;
+  final ValueChanged<bool> onPanelVisibilityChanged;
 
   Color get _targetColor => Colors.blue.shade700;
   Color get _containerColor => Colors.orange.shade700;
@@ -36,6 +41,8 @@ class BoxInfoWidget extends StatelessWidget {
       boxInfo: boxInfo,
       targetColor: _targetColor,
       containerColor: _containerColor,
+      isVisible: isPanelVisible,
+      onVisibilityChanged: onPanelVisibilityChanged,
     );
   }
 
@@ -55,7 +62,7 @@ class BoxInfoWidget extends StatelessWidget {
         Align(
           alignment: Alignment.bottomCenter,
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(12.0),
             child: _buildTargetBoxInfoPanel(context),
           ),
         ),

@@ -10,8 +10,12 @@ class BoxInfoPanelWidget extends StatelessWidget {
     required this.boxInfo,
     required this.targetColor,
     required this.containerColor,
+    required this.onVisibilityChanged,
+    this.isVisible = true,
   }) : super(key: key);
 
+  final bool isVisible;
+  final ValueChanged<bool> onVisibilityChanged;
   final BoxInfo boxInfo;
   final Color targetColor;
   final Color containerColor;
@@ -29,7 +33,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
         Icon(
           icon,
           size: 20.0,
-          color: theme.textTheme.caption?.color,
+          color: Colors.blue,
         ),
         const SizedBox(width: 12.0),
         Column(
@@ -40,24 +44,6 @@ class BoxInfoPanelWidget extends StatelessWidget {
             Text(subtitle, style: theme.textTheme.caption),
           ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildSizeRow(BuildContext context) {
-    return Row(
-      children: [
-        InformationBoxWidget.size(
-          size: boxInfo.targetRect.size,
-          color: targetColor,
-        ),
-        if (boxInfo.containerRect != null) ...[
-          const SizedBox(width: 8.0),
-          InformationBoxWidget.size(
-            size: boxInfo.containerRect!.size,
-            color: containerColor,
-          ),
-        ],
       ],
     );
   }

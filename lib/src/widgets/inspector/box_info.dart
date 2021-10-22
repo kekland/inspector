@@ -84,11 +84,11 @@ class BoxInfo {
     assert(containerRect != null);
 
     final _left = paddingLeft!.toStringAsFixed(1);
-    final _right = paddingRight!.toStringAsFixed(1);
     final _top = paddingTop!.toStringAsFixed(1);
+    final _right = paddingRight!.toStringAsFixed(1);
     final _bottom = paddingBottom!.toStringAsFixed(1);
 
-    return '$_left, $_right, $_top, $_bottom';
+    return '$_left, $_top, $_right, $_bottom';
   }
 
   bool get isDecoratedBox =>
