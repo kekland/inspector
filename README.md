@@ -1,10 +1,12 @@
 # inspector
 
+<img src="./img/inspector.png" width="100%">
+
+> Made as a proof of concept.
+
 A Flutter package for inspecting widgets. Comes with size inspection and a color picker. Useful for debugging widgets and for QA testing.
 
 Inspired by [inspx](https://github.com/raunofreiberg/inspx).
-
-Made as a proof-of-concept.
 
 ## WIP
 

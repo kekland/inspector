@@ -51,7 +51,7 @@ class _InspectorState extends State<Inspector> {
         _onHover(pointerOffset);
       }
 
-      // _onColorPickerStateChanged(false);
+      _onColorPickerStateChanged(false);
     }
 
     if (!_inspectorStateNotifier.value) {
