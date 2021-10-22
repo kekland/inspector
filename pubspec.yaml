@@ -1,6 +1,6 @@
 name: inspector
 description: A Flutter package for inspecting widgets.
-version: 1.0.1
+version: 1.0.2
 homepage: https://github.com/kekland/inspector
 
 environment:
