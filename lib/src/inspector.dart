@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:inspect/src/widgets/color_picker/color_picker_overlay.dart';
 import 'package:inspect/src/widgets/color_picker/color_picker_snackbar.dart';
+import 'package:inspect/src/widgets/inspector/box_info.dart';
 import 'package:inspect/src/widgets/multi_value_listenable.dart';
 
 import './widgets/panel/inspector_panel.dart';
@@ -26,44 +27,12 @@ class Inspector extends StatefulWidget {
   _InspectorState createState() => _InspectorState();
 }
 
-class _CurrentRenderBoxInformation {
-  _CurrentRenderBoxInformation({
-    required this.targetRenderBox,
-    this.containerRenderBox,
-  });
-
-  factory _CurrentRenderBoxInformation.fromHitTestResults(
-    Iterable<RenderBox> boxes,
-  ) {
-    RenderBox? targetRenderBox;
-    RenderBox? containerRenderBox;
-
-    for (final box in boxes) {
-      targetRenderBox ??= box;
-
-      if (targetRenderBox.size < box.size) {
-        containerRenderBox = box;
-        break;
-      }
-    }
-
-    return _CurrentRenderBoxInformation(
-      targetRenderBox: targetRenderBox!,
-      containerRenderBox: containerRenderBox,
-    );
-  }
-
-  final RenderBox targetRenderBox;
-  final RenderBox? containerRenderBox;
-}
-
 class _InspectorState extends State<Inspector> {
   final _repaintBoundaryKey = GlobalKey();
   ui.Image? _image;
   ByteData? _byteData;
 
-  final _currentRenderBoxNotifier =
-      ValueNotifier<_CurrentRenderBoxInformation?>(null);
+  final _currentRenderBoxNotifier = ValueNotifier<BoxInfo?>(null);
 
   final _inspectorStateNotifier = ValueNotifier<bool>(false);
   final _colorPickerStateNotifier = ValueNotifier<bool>(false);
@@ -89,8 +58,7 @@ class _InspectorState extends State<Inspector> {
     if (pointerOffset == null) return;
 
     final boxes = InspectorUtils.onTap(context, pointerOffset);
-    _currentRenderBoxNotifier.value =
-        _CurrentRenderBoxInformation.fromHitTestResults(boxes);
+    _currentRenderBoxNotifier.value = BoxInfo.fromHitTestResults(boxes);
   }
 
   void _onPointerMove(Offset pointerOffset) {
@@ -226,10 +194,7 @@ class _InspectorState extends State<Inspector> {
             builder: (context, constraints) => _inspectorStateNotifier.value
                 ? InspectorOverlay(
                     size: constraints.biggest,
-                    targetRenderBox:
-                        _currentRenderBoxNotifier.value?.targetRenderBox,
-                    containerRenderBox:
-                        _currentRenderBoxNotifier.value?.containerRenderBox,
+                    boxInfo: _currentRenderBoxNotifier.value,
                   )
                 : const SizedBox.shrink(),
           ),

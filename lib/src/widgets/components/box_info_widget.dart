@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../inspector/utils.dart';
+import 'package:inspect/src/widgets/components/box_info_panel_widget.dart';
+import '../inspector/box_info.dart';
 import 'information_box_widget.dart';
 import 'overlay_painter.dart';
 
@@ -30,6 +31,14 @@ class BoxInfoWidget extends StatelessWidget {
     );
   }
 
+  Widget _buildTargetBoxInfoPanel(BuildContext context) {
+    return BoxInfoPanelWidget(
+      boxInfo: boxInfo,
+      targetColor: _targetColor,
+      containerColor: _containerColor,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -43,6 +52,13 @@ class BoxInfoWidget extends StatelessWidget {
         ),
         // ..._buildPaddingWidgets(context),
         _buildTargetBoxSizeWidget(context),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: _buildTargetBoxInfoPanel(context),
+          ),
+        ),
       ],
     );
   }

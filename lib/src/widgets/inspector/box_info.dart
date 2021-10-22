@@ -1,36 +1,43 @@
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-
-Rect? getRectFromRenderBox(RenderBox renderBox) {
-  return renderBox.attached
-      ? renderBox.localToGlobal(Offset.zero) & renderBox.size
-      : null;
-}
 
 /// Contains information about the currently selected [RenderBox].
 ///
 /// [containerRect] may be [null].
 class BoxInfo {
   BoxInfo({
-    required this.targetRect,
-    this.containerRect,
+    required this.targetRenderBox,
+    this.containerRenderBox,
   });
 
-  factory BoxInfo.fromRenderBoxes({
-    required RenderBox targetRenderBox,
-    RenderBox? containerRenderBox,
-  }) {
-    assert(targetRenderBox.attached);
+  factory BoxInfo.fromHitTestResults(
+    Iterable<RenderBox> boxes,
+  ) {
+    RenderBox? targetRenderBox;
+    RenderBox? containerRenderBox;
+
+    for (final box in boxes) {
+      targetRenderBox ??= box;
+
+      if (targetRenderBox.size < box.size) {
+        containerRenderBox = box;
+        break;
+      }
+    }
 
     return BoxInfo(
-      targetRect: getRectFromRenderBox(targetRenderBox)!,
-      containerRect: containerRenderBox != null
-          ? getRectFromRenderBox(containerRenderBox)
-          : null,
+      targetRenderBox: targetRenderBox!,
+      containerRenderBox: containerRenderBox,
     );
   }
 
-  final Rect targetRect;
-  final Rect? containerRect;
+  final RenderBox targetRenderBox;
+  final RenderBox? containerRenderBox;
+
+  Rect get targetRect => getRectFromRenderBox(targetRenderBox)!;
+  Rect? get containerRect => containerRenderBox != null
+      ? getRectFromRenderBox(containerRenderBox!)
+      : null;
 
   double? get paddingLeft => paddingRectLeft?.width;
   double? get paddingRight => paddingRectRight?.width;
@@ -71,6 +78,40 @@ class BoxInfo {
           targetRect.right,
           containerRect!.bottom,
         )
+      : null;
+
+  String describePadding() {
+    assert(containerRect != null);
+
+    final _left = paddingLeft!.toStringAsFixed(1);
+    final _right = paddingRight!.toStringAsFixed(1);
+    final _top = paddingTop!.toStringAsFixed(1);
+    final _bottom = paddingBottom!.toStringAsFixed(1);
+
+    return '$_left, $_right, $_top, $_bottom';
+  }
+
+  bool get isDecoratedBox =>
+      targetRenderBox is RenderDecoratedBox &&
+      (targetRenderBox as RenderDecoratedBox).decoration is BoxDecoration;
+
+  BoxDecoration get _decoration =>
+      (targetRenderBox as RenderDecoratedBox).decoration as BoxDecoration;
+
+  Color? getDecoratedBoxColor() {
+    assert(isDecoratedBox);
+    return _decoration.color;
+  }
+
+  BorderRadiusGeometry? getDecoratedBoxBorderRadius() {
+    assert(isDecoratedBox);
+    return _decoration.borderRadius;
+  }
+}
+
+Rect? getRectFromRenderBox(RenderBox renderBox) {
+  return renderBox.attached
+      ? renderBox.localToGlobal(Offset.zero) & renderBox.size
       : null;
 }
 

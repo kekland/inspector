@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import '../components/box_info_widget.dart';
-import 'utils.dart';
+import 'box_info.dart';
 
 class InspectorOverlay extends StatefulWidget {
   const InspectorOverlay({
     Key? key,
     required this.size,
-    this.targetRenderBox,
-    this.containerRenderBox,
+    required this.boxInfo,
   }) : super(key: key);
 
   final Size size;
-  final RenderBox? targetRenderBox;
-  final RenderBox? containerRenderBox;
+  final BoxInfo? boxInfo;
 
   @override
   _InspectorOverlayState createState() => _InspectorOverlayState();
@@ -42,15 +40,7 @@ class _InspectorOverlayState extends State<InspectorOverlay> {
     );
   }
 
-  bool get _canRender =>
-      widget.targetRenderBox != null && widget.targetRenderBox!.attached;
-
-  BoxInfo? get _boxInfo => _canRender
-      ? BoxInfo.fromRenderBoxes(
-          targetRenderBox: widget.targetRenderBox!,
-          containerRenderBox: widget.containerRenderBox,
-        )
-      : null;
+  bool get _canRender => widget.boxInfo?.targetRenderBox.attached ?? false;
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +53,7 @@ class _InspectorOverlayState extends State<InspectorOverlay> {
         width: widget.size.width,
         height: widget.size.height,
         child: BoxInfoWidget(
-          boxInfo: _boxInfo!,
+          boxInfo: widget.boxInfo!,
         ),
       ),
     );
