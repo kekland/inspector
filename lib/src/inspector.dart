@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -19,9 +20,11 @@ class Inspector extends StatefulWidget {
   const Inspector({
     Key? key,
     required this.child,
+    this.isEnabled,
   }) : super(key: key);
 
   final Widget child;
+  final bool? isEnabled;
 
   @override
   _InspectorState createState() => _InspectorState();
@@ -48,7 +51,7 @@ class _InspectorState extends State<Inspector> {
         _onHover(pointerOffset);
       }
 
-      _onColorPickerStateChanged(false);
+      // _onColorPickerStateChanged(false);
     }
 
     if (!_inspectorStateNotifier.value) {
@@ -139,6 +142,14 @@ class _InspectorState extends State<Inspector> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.isEnabled == null && kReleaseMode) {
+      return widget.child;
+    }
+
+    if (widget.isEnabled != null && !widget.isEnabled!) {
+      return widget.child;
+    }
+
     return Stack(
       children: [
         ValueListenableBuilder(

@@ -18,7 +18,7 @@ class BoxInfoWidget extends StatelessWidget {
   final ValueChanged<bool> onPanelVisibilityChanged;
 
   Color get _targetColor => Colors.blue.shade700;
-  Color get _containerColor => Colors.orange.shade700;
+  Color get _containerColor => Colors.yellow.shade700;
 
   Widget _buildTargetBoxSizeWidget(BuildContext context) {
     return Positioned(
