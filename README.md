@@ -61,6 +61,9 @@ with buttons to toggle size inspection and the color picker.
 It's quite straightforward to use, just tap on the widget that you want to measure 
 or tap on the pixel to get its color.
 
+You can also use keyboard shortcuts - `Shift` will toggle the color picker, and 
+`Alt` or `Cmd` will toggle the widget inspector.
+
 ## Examples
 
 <p align="middle">
