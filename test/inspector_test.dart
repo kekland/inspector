@@ -183,10 +183,7 @@ void main() {
       await tester.tapAt(position);
       await tester.pump();
 
-      final targetRenderObject =
-          tester.hitTestOnBinding(position).path.first.target;
-
-      expect(find.text(describeIdentity(targetRenderObject)), findsOneWidget);
+      expect(find.textContaining('RenderDecoratedBox'), findsOneWidget);
       expect(find.text('100.0 × 100.0'), findsOneWidget);
       expect(find.text('50.0, 150.0, 50.0, 150.0'), findsOneWidget);
     });

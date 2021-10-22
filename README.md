@@ -5,7 +5,7 @@
 
 <img src="https://github.com/kekland/inspector/raw/master/img/inspector.png" width="100%">
 
-A Flutter package for inspecting widgets. Comes with size inspection and a color picker (eyedropper). Useful for debugging widgets and for QA testing.
+A Flutter package for inspecting widgets. Also comes with an eyedropper functionality. Useful for debugging widgets and for QA testing.
 
 Inspired by [inspx](https://github.com/raunofreiberg/inspx).
 

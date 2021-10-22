@@ -40,6 +40,10 @@ class _ExampleAppState extends State<ExampleApp> {
           ),
         ),
       ),
+      trailing: IconButton(
+        icon: Icon(Icons.add),
+        onPressed: () {},
+      ),
     );
   }
 

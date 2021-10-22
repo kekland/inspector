@@ -40,6 +40,7 @@ class Inspector extends StatefulWidget {
 
 class _InspectorState extends State<Inspector> {
   final _repaintBoundaryKey = GlobalKey();
+  final _absorbPointerKey = GlobalKey();
   ui.Image? _image;
 
   final _byteDataStateNotifier = ValueNotifier<ByteData?>(null);
@@ -69,7 +70,12 @@ class _InspectorState extends State<Inspector> {
 
     if (pointerOffset == null) return;
 
-    final boxes = InspectorUtils.onTap(context, pointerOffset);
+    final boxes = InspectorUtils.onTap(
+      _absorbPointerKey.currentContext!,
+      pointerOffset,
+    );
+
+    if (boxes.isEmpty) return;
     _currentRenderBoxNotifier.value = BoxInfo.fromHitTestResults(boxes);
   }
 
@@ -161,29 +167,38 @@ class _InspectorState extends State<Inspector> {
 
     return Stack(
       children: [
-        ValueListenableBuilder(
-          valueListenable: _colorPickerStateNotifier,
-          builder: (context, bool isPickingColor, child) {
-            Widget _child = child!;
+        MultiValueListenableBuilder(
+          valueListenables: [
+            _colorPickerStateNotifier,
+            _inspectorStateNotifier,
+          ],
+          builder: (context) {
+            Widget _child = widget.child;
+
+            if (_colorPickerStateNotifier.value ||
+                _inspectorStateNotifier.value) {
+              _child = AbsorbPointer(
+                key: _absorbPointerKey,
+                child: _child,
+              );
+            }
 
             if (_colorPickerStateNotifier.value) {
               _child = RepaintBoundary(
                 key: _repaintBoundaryKey,
-                child: AbsorbPointer(
-                  child: _child,
-                ),
+                child: _child,
               );
             }
 
             return GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTapUp: (e) => _onTap(e.globalPosition),
+              onPanDown: (e) => _onPointerMove(e.globalPosition),
               onPanUpdate: (e) => _onPointerMove(e.globalPosition),
               onPanEnd: (e) => _onTap(null),
               child: _child,
             );
           },
-          child: widget.child,
         ),
         MultiValueListenableBuilder(
           valueListenables: [

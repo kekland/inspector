@@ -14,15 +14,29 @@ class InspectorUtils {
     return null;
   }
 
+  static RenderBox? _bypassAbsorbPointer(RenderProxyBox renderObject) {
+    RenderBox _lastObject = renderObject;
+
+    while (_lastObject is! RenderAbsorbPointer) {
+      _lastObject = renderObject.child!;
+    }
+
+    return _lastObject.child;
+  }
+
   static Iterable<RenderBox> onTap(BuildContext context, Offset pointerOffset) {
-    final renderObject = context.findRenderObject() as RenderBox?;
+    final renderObject = context.findRenderObject() as RenderProxyBox?;
 
     if (renderObject == null) return [];
 
+    final renderObjectWithoutAbsorbPointer = _bypassAbsorbPointer(renderObject);
+
+    if (renderObjectWithoutAbsorbPointer == null) return [];
+
     final hitTestResult = BoxHitTestResult();
-    renderObject.hitTest(
+    renderObjectWithoutAbsorbPointer.hitTest(
       hitTestResult,
-      position: renderObject.globalToLocal(pointerOffset),
+      position: renderObjectWithoutAbsorbPointer.globalToLocal(pointerOffset),
     );
 
     return hitTestResult.path
