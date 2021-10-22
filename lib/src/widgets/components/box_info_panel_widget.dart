@@ -1,8 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:inspect/src/widgets/components/box_model_painter.dart';
-import 'package:inspect/src/widgets/components/information_box_widget.dart';
-import 'package:inspect/src/widgets/inspector/box_info.dart';
+import 'package:inspector/src/widgets/inspector/box_info.dart';
 
 class BoxInfoPanelWidget extends StatelessWidget {
   const BoxInfoPanelWidget({

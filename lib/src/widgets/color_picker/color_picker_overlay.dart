@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:inspect/src/widgets/color_picker/utils.dart';
+
+import 'utils.dart';
 
 class ColorPickerOverlay extends StatelessWidget {
   const ColorPickerOverlay({

@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:inspect/src/widgets/inspector/box_info.dart';
+import 'package:inspector/src/widgets/inspector/box_info.dart';
 
 class BoxModelPainter extends CustomPainter {
   BoxModelPainter({

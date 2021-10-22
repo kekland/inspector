@@ -67,7 +67,7 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  inspect:
+  inspector:
     dependency: "direct main"
     description:
       path: ".."

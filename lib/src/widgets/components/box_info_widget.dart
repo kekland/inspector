@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:inspect/src/widgets/components/box_info_panel_widget.dart';
 import '../inspector/box_info.dart';
+import 'box_info_panel_widget.dart';
 import 'information_box_widget.dart';
 import 'overlay_painter.dart';
 

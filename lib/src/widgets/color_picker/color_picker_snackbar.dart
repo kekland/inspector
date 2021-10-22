@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:inspect/src/widgets/color_picker/utils.dart';
+
+import 'utils.dart';
 
 void showColorPickerResultSnackbar({
   required BuildContext context,

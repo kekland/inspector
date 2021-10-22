@@ -5,15 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:inspect/src/widgets/color_picker/color_picker_overlay.dart';
-import 'package:inspect/src/widgets/color_picker/color_picker_snackbar.dart';
-import 'package:inspect/src/widgets/inspector/box_info.dart';
-import 'package:inspect/src/widgets/multi_value_listenable.dart';
 
 import './widgets/panel/inspector_panel.dart';
 import 'utils.dart';
+import 'widgets/color_picker/color_picker_overlay.dart';
+import 'widgets/color_picker/color_picker_snackbar.dart';
 import 'widgets/color_picker/utils.dart';
+import 'widgets/inspector/box_info.dart';
 import 'widgets/inspector/overlay.dart';
+import 'widgets/multi_value_listenable.dart';
 
 class Inspector extends StatefulWidget {
   const Inspector({
