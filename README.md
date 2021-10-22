@@ -15,7 +15,7 @@ Warning, the development of this package is still in progress and some things ma
 
 ## Features
 
-<img align="right" src="https://github.com/kekland/inspector/raw/master/img/example.gif" width="200px">
+<img align="right" src="https://github.com/kekland/inspector/raw/master/img/example.gif" width="300px">
 
 - [x] Color picker
 - [x] Size inspection
