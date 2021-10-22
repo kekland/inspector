@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import './components/box_info_widget.dart';
+import '../components/box_info_widget.dart';
 import 'utils.dart';
 
 class InspectorOverlay extends StatefulWidget {

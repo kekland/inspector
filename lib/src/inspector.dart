@@ -5,10 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:inspect/src/widgets/color_picker/color_picker_overlay.dart';
+import 'package:inspect/src/widgets/color_picker/color_picker_snackbar.dart';
 import 'package:inspect/src/widgets/multi_value_listenable.dart';
-import './widgets/overlay/overlay.dart';
+
 import './widgets/panel/inspector_panel.dart';
 import 'utils.dart';
+import 'widgets/color_picker/utils.dart';
+import 'widgets/inspector/overlay.dart';
 
 class Inspector extends StatefulWidget {
   const Inspector({
@@ -54,7 +58,6 @@ class _CurrentRenderBoxInformation {
 }
 
 class _InspectorState extends State<Inspector> {
-  final _listenerKey = const ValueKey('listener-key');
   final _repaintBoundaryKey = GlobalKey();
   ui.Image? _image;
   ByteData? _byteData;
@@ -67,6 +70,8 @@ class _InspectorState extends State<Inspector> {
 
   final _selectedColorOffsetNotifier = ValueNotifier<Offset?>(null);
   final _selectedColorStateNotifier = ValueNotifier<Color?>(null);
+
+  // Gestures
 
   void _onTap(Offset? pointerOffset) {
     if (_colorPickerStateNotifier.value) {
@@ -94,58 +99,38 @@ class _InspectorState extends State<Inspector> {
     }
   }
 
-  void _onInspectorStateChanged(bool isEnabled) {
-    if (!isEnabled) {
-      _currentRenderBoxNotifier.value = null;
-    }
+  // Inspector
 
+  void _onInspectorStateChanged(bool isEnabled) {
     _inspectorStateNotifier.value = isEnabled;
 
     if (isEnabled) {
-      _colorPickerStateNotifier.value = false;
+      _onColorPickerStateChanged(false);
+    } else {
+      _currentRenderBoxNotifier.value = null;
     }
   }
+
+  // Color picker
 
   void _onColorPickerStateChanged(bool isEnabled) {
     _colorPickerStateNotifier.value = isEnabled;
 
     if (isEnabled) {
-      _inspectorStateNotifier.value = false;
+      _onInspectorStateChanged(false);
       WidgetsBinding.instance?.addPostFrameCallback((_) {
         _extractByteData();
       });
     } else {
       if (_selectedColorStateNotifier.value != null) {
-        final color = _selectedColorStateNotifier.value!;
-        final colorString = '#${colorToHexString(color)}';
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Container(
-                  width: 16.0,
-                  height: 16.0,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(4.0),
-                  ),
-                ),
-                const SizedBox(width: 8.0),
-                Text('Color: $colorString'),
-              ],
-            ),
-            action: SnackBarAction(
-              label: 'Copy',
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: colorString));
-              },
-            ),
-          ),
+        showColorPickerResultSnackbar(
+          context: context,
+          color: _selectedColorStateNotifier.value!,
         );
       }
 
       _image?.dispose();
+      _image = null;
       _byteData = null;
 
       _selectedColorOffsetNotifier.value = null;
@@ -167,15 +152,21 @@ class _InspectorState extends State<Inspector> {
     final _x = offset.dx.round();
     final _y = offset.dy.round();
 
-    final _index = (_y * _image!.width + _x) * 4;
+    _selectedColorStateNotifier.value = getPixelFromByteData(
+      _byteData!,
+      width: _image!.width,
+      x: _x,
+      y: _y,
+    );
 
-    final r = _byteData!.getUint8(_index);
-    final g = _byteData!.getUint8(_index + 1);
-    final b = _byteData!.getUint8(_index + 2);
-    final a = _byteData!.getUint8(_index + 3);
-
-    _selectedColorStateNotifier.value = Color.fromARGB(a, r, g, b);
     _selectedColorOffsetNotifier.value = offset;
+  }
+
+  @override
+  void dispose() {
+    _image?.dispose();
+    _byteData = null;
+    super.dispose();
   }
 
   @override
@@ -197,7 +188,6 @@ class _InspectorState extends State<Inspector> {
             }
 
             return GestureDetector(
-              key: _listenerKey,
               behavior: HitTestBehavior.translucent,
               onTapUp: (e) => _onTap(e.globalPosition),
               onPanUpdate: (e) => _onPointerMove(e.globalPosition),
@@ -218,31 +208,11 @@ class _InspectorState extends State<Inspector> {
 
             if (offset == null || color == null) return const SizedBox.shrink();
 
-            final color2 = color;
             return Positioned(
               left: offset.dx + 8.0,
               top: offset.dy - 64.0,
-              child: Container(
-                width: 56.0,
-                height: 56.0,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(4.0),
-                  border: Border.all(
-                    color: Colors.black12,
-                  ),
-                ),
-                alignment: Alignment.bottomRight,
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: Text(
-                    colorToHexString(color),
-                    style: TextStyle(
-                      color: getTextColorOnBackground(color2),
-                      fontSize: 12.0,
-                    ),
-                  ),
-                ),
+              child: ColorPickerOverlay(
+                color: color,
               ),
             );
           },
