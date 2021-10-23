@@ -1,13 +1,17 @@
 # inspector
 
-![Pub Version](https://img.shields.io/pub/v/inspector?label=pub)
+[![Pub Version](https://img.shields.io/pub/v/inspector?label=pub)](https://pub.dev/packages/inspector)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/kekland/inspector/Test%20and%20analysis)](https://github.com/kekland/inspector/actions)
 [![Coverage Status](https://coveralls.io/repos/github/kekland/inspector/badge.svg?branch=master)](https://coveralls.io/github/kekland/inspector?branch=master)
+[![GitHub Repo stars](https://img.shields.io/github/stars/kekland/inspector?style=social)](https://github.com/kekland/inspector)
 
 <img src="https://github.com/kekland/inspector/raw/master/img/inspector.png" width="100%">
 
 A Flutter package for inspecting widgets. Also comes with an eyedropper functionality. Useful for debugging widgets and for QA testing.
 
 Supports keyboard shortcuts if you're using a physical keyboard.
+
+Check out the [example web app!](https://kekland.github.io/inspector/#/)
 
 Inspired by [inspx](https://github.com/raunofreiberg/inspx).
 
