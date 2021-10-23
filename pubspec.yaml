@@ -1,6 +1,6 @@
 name: inspector
 description: A Flutter package for inspecting widget size and color. Useful for quick debugging or QA testing.
-version: 1.1.0
+version: 1.1.1
 homepage: https://github.com/kekland/inspector
 
 environment:

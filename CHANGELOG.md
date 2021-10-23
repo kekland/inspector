@@ -1,3 +1,8 @@
+## 1.1.1
+
+* Minor README changes
+* Deployed the example app to GitHub pages
+
 ## 1.1.0
 
 * Added support for keyboard shortcuts. You can now press `Cmd` or `Alt` to toggle the widget inspector, and press `Shift` to toggle the color picker.
