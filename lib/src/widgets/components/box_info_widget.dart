@@ -27,10 +27,12 @@ class BoxInfoWidget extends StatelessWidget {
         height: InformationBoxWidget.preferredHeight,
       ),
       left: boxInfo.targetRect.left,
-      child: Align(
-        child: InformationBoxWidget.size(
-          size: boxInfo.targetRect.size,
-          color: _targetColor,
+      child: IgnorePointer(
+        child: Align(
+          child: InformationBoxWidget.size(
+            size: boxInfo.targetRect.size,
+            color: _targetColor,
+          ),
         ),
       ),
     );
@@ -50,11 +52,13 @@ class BoxInfoWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        CustomPaint(
-          painter: OverlayPainter(
-            boxInfo: boxInfo,
-            targetRectColor: _targetColor.withOpacity(0.35),
-            containerRectColor: _containerColor.withOpacity(0.35),
+        IgnorePointer(
+          child: CustomPaint(
+            painter: OverlayPainter(
+              boxInfo: boxInfo,
+              targetRectColor: _targetColor.withOpacity(0.35),
+              containerRectColor: _containerColor.withOpacity(0.35),
+            ),
           ),
         ),
         // ..._buildPaddingWidgets(context),

@@ -18,10 +18,18 @@ Color getPixelFromByteData(
   return Color.fromARGB(a, r, g, b);
 }
 
-String colorToHexString(Color color) {
+/// Returns the [color] in hexadecimal (#RRGGBB) format.
+/// 
+/// If [withAlpha] is [true], then returns it in #AARRGGBB format.
+String colorToHexString(Color color, {bool withAlpha = false}) {
+  final a = color.alpha.toRadixString(16).padLeft(2, '0');
   final r = color.red.toRadixString(16).padLeft(2, '0');
   final g = color.green.toRadixString(16).padLeft(2, '0');
   final b = color.blue.toRadixString(16).padLeft(2, '0');
+
+  if (withAlpha) {
+    return '$a$r$g$b';
+  }
 
   return '$r$g$b';
 }
