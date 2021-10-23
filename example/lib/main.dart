@@ -7,7 +7,10 @@ void main() {
       home: ExampleApp(),
       darkTheme: ThemeData.dark(),
       themeMode: ThemeMode.system,
-      builder: (context, child) => Inspector(child: child!),
+      builder: (context, child) => Inspector(
+        child: child!,
+        isEnabled: true,
+      ),
     ),
   );
 }
