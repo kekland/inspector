@@ -1,3 +1,7 @@
+## 1.1.4
+
+* Fix color picker index going out of bounds
+
 ## 1.1.3
 
 * Bugfixes
