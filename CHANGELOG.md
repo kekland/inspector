@@ -1,3 +1,8 @@
+## 1.1.2
+
+* Added support for different properties on `RenderParagraph` and `RenderDecoratedBox`.
+* Bugfixes related to bootstrapping Inspector on a portion of a screen.
+
 ## 1.1.1
 
 * Minor README changes
