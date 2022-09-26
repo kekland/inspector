@@ -210,8 +210,12 @@ class _InspectorState extends State<Inspector> {
   void _onHover(Offset offset) {
     if (_image == null || _byteDataStateNotifier.value == null) return;
 
-    final _x = offset.dx.round();
-    final _y = offset.dy.round();
+    final shiftedOffset = (_repaintBoundaryKey.currentContext!
+            .findRenderObject()! as RenderRepaintBoundary)
+        .globalToLocal(offset);
+
+    final _x = shiftedOffset.dx.round();
+    final _y = shiftedOffset.dy.round();
 
     _selectedColorStateNotifier.value = getPixelFromByteData(
       _byteDataStateNotifier.value!,
@@ -220,7 +224,11 @@ class _InspectorState extends State<Inspector> {
       y: _y,
     );
 
-    _selectedColorOffsetNotifier.value = offset;
+    final overlayOffset =
+        (_stackKey.currentContext!.findRenderObject() as RenderStack)
+            .localToGlobal(Offset.zero);
+
+    _selectedColorOffsetNotifier.value = offset - overlayOffset;
   }
 
   @override
