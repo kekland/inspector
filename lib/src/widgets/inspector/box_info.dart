@@ -1,5 +1,4 @@
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 
 /// Contains information about the currently selected [RenderBox].
 ///

@@ -1,8 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inspector/inspector.dart';
 
@@ -212,7 +209,7 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('RenderDecoratedBox'), findsOneWidget);
-      expect(find.text('100.0 × 100.0'), findsOneWidget);
+      expect(find.text('100.0 × 100.0'), findsWidgets);
       expect(find.text('50.0, 150.0, 50.0, 150.0'), findsOneWidget);
     });
 
