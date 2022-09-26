@@ -19,7 +19,7 @@ Color getPixelFromByteData(
 }
 
 /// Returns the [color] in hexadecimal (#RRGGBB) format.
-/// 
+///
 /// If [withAlpha] is [true], then returns it in #AARRGGBB format.
 String colorToHexString(Color color, {bool withAlpha = false}) {
   final a = color.alpha.toRadixString(16).padLeft(2, '0');
