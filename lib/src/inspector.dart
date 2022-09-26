@@ -77,6 +77,7 @@ class Inspector extends StatefulWidget {
 }
 
 class _InspectorState extends State<Inspector> {
+  final _stackKey = GlobalKey();
   final _repaintBoundaryKey = GlobalKey();
   final _absorbPointerKey = GlobalKey();
   ui.Image? _image;
@@ -133,9 +134,9 @@ class _InspectorState extends State<Inspector> {
 
     if (boxes.isEmpty) return;
 
-    final overlayOffset = (_absorbPointerKey.currentContext!.findRenderObject()
-            as RenderAbsorbPointer)
-        .localToGlobal(Offset.zero);
+    final overlayOffset =
+        (_stackKey.currentContext!.findRenderObject() as RenderStack)
+            .localToGlobal(Offset.zero);
 
     _currentRenderBoxNotifier.value = BoxInfo.fromHitTestResults(
       boxes,
@@ -257,6 +258,7 @@ class _InspectorState extends State<Inspector> {
     }
 
     return Stack(
+      key: _stackKey,
       children: [
         Align(
           alignment: widget.alignment,

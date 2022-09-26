@@ -38,17 +38,15 @@ class BoxInfo {
 
   final Offset overlayOffset;
 
-  Rect get targetRect => getRectFromRenderBox(
-        targetRenderBox,
-        overlayOffset: overlayOffset,
-      )!;
+  Rect get targetRect => getRectFromRenderBox(targetRenderBox)!;
+
+  Rect get targetRectShifted => targetRect.shift(-overlayOffset);
 
   Rect? get containerRect => containerRenderBox != null
-      ? getRectFromRenderBox(
-          containerRenderBox!,
-          overlayOffset: overlayOffset,
-        )
+      ? getRectFromRenderBox(containerRenderBox!)
       : null;
+
+  Rect get containerRectShifted => targetRect.shift(-overlayOffset);
 
   double? get paddingLeft => paddingRectLeft?.width;
   double? get paddingRight => paddingRectRight?.width;
@@ -120,12 +118,9 @@ class BoxInfo {
   }
 }
 
-Rect? getRectFromRenderBox(
-  RenderBox renderBox, {
-  Offset overlayOffset = Offset.zero,
-}) {
+Rect? getRectFromRenderBox(RenderBox renderBox) {
   return renderBox.attached
-      ? (renderBox.localToGlobal(Offset.zero) - overlayOffset) & renderBox.size
+      ? (renderBox.localToGlobal(Offset.zero)) & renderBox.size
       : null;
 }
 

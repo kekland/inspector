@@ -23,10 +23,10 @@ class BoxInfoWidget extends StatelessWidget {
   Widget _buildTargetBoxSizeWidget(BuildContext context) {
     return Positioned(
       top: calculateBoxPosition(
-        rect: boxInfo.targetRect,
+        rect: boxInfo.targetRectShifted,
         height: InformationBoxWidget.preferredHeight,
       ),
-      left: boxInfo.targetRect.left,
+      left: boxInfo.targetRectShifted.left,
       child: IgnorePointer(
         child: Align(
           child: InformationBoxWidget.size(

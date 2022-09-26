@@ -18,7 +18,10 @@ class OverlayPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(boxInfo.targetRect, targetRectPaint);
+    canvas.drawRect(
+      boxInfo.targetRectShifted,
+      targetRectPaint,
+    );
 
     if (boxInfo.containerRect != null) {
       final paddingRects = [
@@ -29,7 +32,10 @@ class OverlayPainter extends CustomPainter {
       ];
 
       for (final rect in paddingRects) {
-        canvas.drawRect(rect!, containerRectPaint);
+        canvas.drawRect(
+          rect!.shift(-boxInfo.overlayOffset),
+          containerRectPaint,
+        );
       }
     }
   }
