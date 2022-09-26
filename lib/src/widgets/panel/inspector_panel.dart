@@ -48,7 +48,7 @@ class _InspectorPanelState extends State<InspectorPanel> {
     if (widget.isInspectorEnabled) {
       return Icons.format_shapes;
     } else if (widget.isColorPickerEnabled) {
-      return Icons.palette;
+      return Icons.colorize;
     }
 
     return Icons.chevron_left;
@@ -114,7 +114,7 @@ class _InspectorPanelState extends State<InspectorPanel> {
                     widget.isColorPickerEnabled ? Colors.white : Colors.black54,
                 child: widget.isColorPickerLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Icon(Icons.palette),
+                    : const Icon(Icons.colorize),
               ),
             ],
           ] else

@@ -1,8 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inspector/inspector.dart';
 
@@ -86,7 +83,7 @@ void main() {
 
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       expect(find.byIcon(Icons.format_shapes), findsOneWidget);
-      expect(find.byIcon(Icons.palette), findsOneWidget);
+      expect(find.byIcon(Icons.colorize), findsOneWidget);
     });
 
     testWidgets('panel can be collapsed', (tester) async {
@@ -94,14 +91,14 @@ void main() {
 
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       expect(find.byIcon(Icons.format_shapes), findsOneWidget);
-      expect(find.byIcon(Icons.palette), findsOneWidget);
+      expect(find.byIcon(Icons.colorize), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.chevron_right));
       await tester.pump();
 
       expect(find.byIcon(Icons.chevron_left), findsOneWidget);
       expect(find.byIcon(Icons.format_shapes), findsNothing);
-      expect(find.byIcon(Icons.palette), findsNothing);
+      expect(find.byIcon(Icons.colorize), findsNothing);
     });
 
     testWidgets('panel can be reopened', (tester) async {
@@ -111,14 +108,14 @@ void main() {
 
       expect(find.byIcon(Icons.chevron_left), findsOneWidget);
       expect(find.byIcon(Icons.format_shapes), findsNothing);
-      expect(find.byIcon(Icons.palette), findsNothing);
+      expect(find.byIcon(Icons.colorize), findsNothing);
 
       await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pump();
 
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       expect(find.byIcon(Icons.format_shapes), findsOneWidget);
-      expect(find.byIcon(Icons.palette), findsOneWidget);
+      expect(find.byIcon(Icons.colorize), findsOneWidget);
     });
 
     // testWidgets('open panel golden test', (tester) async {
@@ -212,7 +209,7 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('RenderDecoratedBox'), findsOneWidget);
-      expect(find.text('100.0 × 100.0'), findsOneWidget);
+      expect(find.text('100.0 × 100.0'), findsWidgets);
       expect(find.text('50.0, 150.0, 50.0, 150.0'), findsOneWidget);
     });
 
@@ -242,7 +239,7 @@ void main() {
   //     await tester.pumpWidget(_buildColorPickerTestBody());
 
   //     final finder = find.ancestor(
-  //       of: find.byIcon(Icons.palette),
+  //       of: find.byIcon(Icons.colorize),
   //       matching: find.byType(FloatingActionButton),
   //     );
 
@@ -252,13 +249,13 @@ void main() {
   //     expect(getButton().backgroundColor, Colors.white);
   //     expect(getButton().foregroundColor, Colors.black54);
 
-  //     await tester.tap(find.byIcon(Icons.palette));
+  //     await tester.tap(find.byIcon(Icons.colorize));
   //     await tester.pumpAndSettle();
 
   //     expect(getButton().backgroundColor, Colors.blue);
   //     expect(getButton().foregroundColor, Colors.white);
 
-  //     await tester.tap(find.byIcon(Icons.palette));
+  //     await tester.tap(find.byIcon(Icons.colorize));
   //     await tester.pumpAndSettle();
 
   //     expect(getButton().backgroundColor, Colors.white);
@@ -281,7 +278,7 @@ void main() {
 
   //   testWidgets('gets the right colors', (tester) async {
   //     await tester.pumpWidget(_buildColorPickerTestBody());
-  //     await tester.tap(find.byIcon(Icons.palette));
+  //     await tester.tap(find.byIcon(Icons.colorize));
 
   //     await tester.pumpAndSettle(
   //       const Duration(milliseconds: 100),

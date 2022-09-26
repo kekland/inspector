@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import '../components/box_info_widget.dart';
 import 'box_info.dart';
 
@@ -36,7 +35,7 @@ class _InspectorOverlayState extends State<InspectorOverlay> {
 
     setState(() {});
 
-    WidgetsBinding.instance?.scheduleFrameCallback(
+    WidgetsBinding.instance.scheduleFrameCallback(
       _onTick,
       rescheduling: tick != null,
     );
@@ -50,17 +49,15 @@ class _InspectorOverlayState extends State<InspectorOverlay> {
       return const SizedBox.shrink();
     }
 
-    return IgnorePointer(
-      child: SizedBox(
-        width: widget.size.width,
-        height: widget.size.height,
-        child: ValueListenableBuilder(
-          valueListenable: _panelVisibilityNotifier,
-          builder: (context, bool isVisible, _) => BoxInfoWidget(
-            boxInfo: widget.boxInfo!,
-            isPanelVisible: isVisible,
-            onPanelVisibilityChanged: (v) => _panelVisibilityNotifier.value = v,
-          ),
+    return SizedBox(
+      width: widget.size.width,
+      height: widget.size.height,
+      child: ValueListenableBuilder(
+        valueListenable: _panelVisibilityNotifier,
+        builder: (context, bool isVisible, _) => BoxInfoWidget(
+          boxInfo: widget.boxInfo!,
+          isPanelVisible: isVisible,
+          onPanelVisibilityChanged: (v) => _panelVisibilityNotifier.value = v,
         ),
       ),
     );

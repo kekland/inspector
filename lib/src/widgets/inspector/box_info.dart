@@ -1,5 +1,4 @@
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 
 /// Contains information about the currently selected [RenderBox].
 ///
@@ -8,11 +7,13 @@ class BoxInfo {
   BoxInfo({
     required this.targetRenderBox,
     this.containerRenderBox,
+    this.overlayOffset = Offset.zero,
   });
 
   factory BoxInfo.fromHitTestResults(
-    Iterable<RenderBox> boxes,
-  ) {
+    Iterable<RenderBox> boxes, {
+    Offset overlayOffset = Offset.zero,
+  }) {
     RenderBox? targetRenderBox;
     RenderBox? containerRenderBox;
 
@@ -28,15 +29,25 @@ class BoxInfo {
     return BoxInfo(
       targetRenderBox: targetRenderBox!,
       containerRenderBox: containerRenderBox,
+      overlayOffset: overlayOffset,
     );
   }
 
   final RenderBox targetRenderBox;
   final RenderBox? containerRenderBox;
 
-  Rect get targetRect => getRectFromRenderBox(targetRenderBox)!;
+  final Offset overlayOffset;
+
+  Rect get targetRect => getRectFromRenderBox(
+        targetRenderBox,
+        overlayOffset: overlayOffset,
+      )!;
+
   Rect? get containerRect => containerRenderBox != null
-      ? getRectFromRenderBox(containerRenderBox!)
+      ? getRectFromRenderBox(
+          containerRenderBox!,
+          overlayOffset: overlayOffset,
+        )
       : null;
 
   double? get paddingLeft => paddingRectLeft?.width;
@@ -109,9 +120,12 @@ class BoxInfo {
   }
 }
 
-Rect? getRectFromRenderBox(RenderBox renderBox) {
+Rect? getRectFromRenderBox(
+  RenderBox renderBox, {
+  Offset overlayOffset = Offset.zero,
+}) {
   return renderBox.attached
-      ? renderBox.localToGlobal(Offset.zero) & renderBox.size
+      ? (renderBox.localToGlobal(Offset.zero) - overlayOffset) & renderBox.size
       : null;
 }
 

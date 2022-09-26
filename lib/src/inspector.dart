@@ -1,11 +1,9 @@
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:inspector/src/keyboard_handler.dart';
 
 import './widgets/panel/inspector_panel.dart';
@@ -43,6 +41,7 @@ class Inspector extends StatefulWidget {
   const Inspector({
     Key? key,
     required this.child,
+    this.alignment = Alignment.center,
     this.areKeyboardShortcutsEnabled = true,
     this.isPanelVisible = true,
     this.isWidgetInspectorEnabled = true,
@@ -68,6 +67,7 @@ class Inspector extends StatefulWidget {
   final bool isPanelVisible;
   final bool isWidgetInspectorEnabled;
   final bool isColorPickerEnabled;
+  final Alignment alignment;
   final List<LogicalKeyboardKey> widgetInspectorShortcuts;
   final List<LogicalKeyboardKey> colorPickerShortcuts;
   final bool? isEnabled;
@@ -132,7 +132,15 @@ class _InspectorState extends State<Inspector> {
     );
 
     if (boxes.isEmpty) return;
-    _currentRenderBoxNotifier.value = BoxInfo.fromHitTestResults(boxes);
+
+    final overlayOffset = (_absorbPointerKey.currentContext!.findRenderObject()
+            as RenderAbsorbPointer)
+        .localToGlobal(Offset.zero);
+
+    _currentRenderBoxNotifier.value = BoxInfo.fromHitTestResults(
+      boxes,
+      overlayOffset: overlayOffset,
+    );
   }
 
   void _onPointerMove(Offset pointerOffset) {
@@ -170,7 +178,7 @@ class _InspectorState extends State<Inspector> {
 
     if (isEnabled) {
       _onInspectorStateChanged(false);
-      WidgetsBinding.instance?.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         _extractByteData();
       });
     } else {
@@ -250,37 +258,40 @@ class _InspectorState extends State<Inspector> {
 
     return Stack(
       children: [
-        MultiValueListenableBuilder(
-          valueListenables: [
-            _colorPickerStateNotifier,
-            _inspectorStateNotifier,
-          ],
-          builder: (context) {
-            Widget _child = widget.child;
+        Align(
+          alignment: widget.alignment,
+          child: MultiValueListenableBuilder(
+            valueListenables: [
+              _colorPickerStateNotifier,
+              _inspectorStateNotifier,
+            ],
+            builder: (context) {
+              Widget _child = widget.child;
 
-            if (_colorPickerStateNotifier.value ||
-                _inspectorStateNotifier.value) {
-              _child = AbsorbPointer(
-                key: _absorbPointerKey,
+              if (_colorPickerStateNotifier.value ||
+                  _inspectorStateNotifier.value) {
+                _child = AbsorbPointer(
+                  key: _absorbPointerKey,
+                  child: _child,
+                );
+              }
+
+              if (_colorPickerStateNotifier.value) {
+                _child = RepaintBoundary(
+                  key: _repaintBoundaryKey,
+                  child: _child,
+                );
+              }
+
+              return Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerUp: (e) => _onTap(e.position),
+                onPointerMove: (e) => _onPointerMove(e.position),
+                onPointerDown: (e) => _onPointerMove(e.position),
                 child: _child,
               );
-            }
-
-            if (_colorPickerStateNotifier.value) {
-              _child = RepaintBoundary(
-                key: _repaintBoundaryKey,
-                child: _child,
-              );
-            }
-
-            return Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerUp: (e) => _onTap(e.position),
-              onPointerMove: (e) => _onPointerMove(e.position),
-              onPointerDown: (e) => _onPointerMove(e.position),
-              child: _child,
-            );
-          },
+            },
+          ),
         ),
         if (widget.isColorPickerEnabled)
           MultiValueListenableBuilder(
