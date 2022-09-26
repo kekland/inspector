@@ -116,6 +116,13 @@ class BoxInfoPanelWidget extends StatelessWidget {
         ),
         _buildInfoRow(
           context,
+          icon: Icons.circle_outlined,
+          subtitle: 'shape',
+          backgroundColor: theme.chipTheme.backgroundColor,
+          child: Text(decoration.shape.toString()),
+        ),
+        _buildInfoRow(
+          context,
           icon: Icons.palette,
           subtitle: 'color',
           backgroundColor: theme.chipTheme.backgroundColor,

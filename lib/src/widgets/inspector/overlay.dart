@@ -36,7 +36,7 @@ class _InspectorOverlayState extends State<InspectorOverlay> {
 
     setState(() {});
 
-    WidgetsBinding.instance?.scheduleFrameCallback(
+    WidgetsBinding.instance.scheduleFrameCallback(
       _onTick,
       rescheduling: tick != null,
     );
