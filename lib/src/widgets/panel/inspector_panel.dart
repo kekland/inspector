@@ -8,6 +8,9 @@ class InspectorPanel extends StatefulWidget {
     this.onInspectorStateChanged,
     this.onColorPickerStateChanged,
     required this.isColorPickerLoading,
+    required this.isZoomEnabled,
+    this.onZoomStateChanged,
+    required this.isZoomLoading,
   }) : super(key: key);
 
   final bool isInspectorEnabled;
@@ -16,7 +19,11 @@ class InspectorPanel extends StatefulWidget {
   final bool isColorPickerEnabled;
   final ValueChanged<bool>? onColorPickerStateChanged;
 
+  final bool isZoomEnabled;
+  final ValueChanged<bool>? onZoomStateChanged;
+
   final bool isColorPickerLoading;
+  final bool isZoomLoading;
 
   @override
   _InspectorPanelState createState() => _InspectorPanelState();
@@ -27,6 +34,7 @@ class _InspectorPanelState extends State<InspectorPanel> {
 
   bool get _isInspectorEnabled => widget.onInspectorStateChanged != null;
   bool get _isColorPickerEnabled => widget.onColorPickerStateChanged != null;
+  bool get _isZoomEnabled => widget.onZoomStateChanged != null;
 
   void _toggleVisibility() {
     setState(() => _isVisible = !_isVisible);
@@ -42,6 +50,11 @@ class _InspectorPanelState extends State<InspectorPanel> {
     widget.onColorPickerStateChanged!(!widget.isColorPickerEnabled);
   }
 
+  void _toogleZoomState() {
+    assert(_isZoomEnabled);
+    widget.onZoomStateChanged!(!widget.isZoomEnabled);
+  }
+
   IconData get _visibilityButtonIcon {
     if (_isVisible) return Icons.chevron_right;
 
@@ -49,6 +62,8 @@ class _InspectorPanelState extends State<InspectorPanel> {
       return Icons.format_shapes;
     } else if (widget.isColorPickerEnabled) {
       return Icons.colorize;
+    } else if (widget.isZoomEnabled) {
+      return Icons.zoom_in;
     }
 
     return Icons.chevron_left;
@@ -57,7 +72,9 @@ class _InspectorPanelState extends State<InspectorPanel> {
   Color get _visibilityButtonBackgroundColor {
     if (_isVisible) return Colors.white;
 
-    if (widget.isInspectorEnabled || widget.isColorPickerEnabled) {
+    if (widget.isInspectorEnabled ||
+        widget.isColorPickerEnabled ||
+        widget.isZoomEnabled) {
       return Colors.blue;
     }
 
@@ -67,7 +84,9 @@ class _InspectorPanelState extends State<InspectorPanel> {
   Color get _visibilityButtonForegroundColor {
     if (_isVisible) return Colors.black54;
 
-    if (widget.isInspectorEnabled || widget.isColorPickerEnabled) {
+    if (widget.isInspectorEnabled ||
+        widget.isColorPickerEnabled ||
+        widget.isZoomEnabled) {
       return Colors.white;
     }
 
@@ -78,7 +97,8 @@ class _InspectorPanelState extends State<InspectorPanel> {
   Widget build(BuildContext context) {
     final _height = 16.0 +
         (_isInspectorEnabled ? 56.0 : 0.0) +
-        (_isColorPickerEnabled ? 64.0 : 0.0);
+        (_isColorPickerEnabled ? 64.0 : 0.0) +
+        (_isZoomEnabled ? 64.0 : 0.0);
 
     return Padding(
       padding: const EdgeInsets.only(right: 8.0),
@@ -116,6 +136,19 @@ class _InspectorPanelState extends State<InspectorPanel> {
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Icon(Icons.colorize),
               ),
+              if (_isZoomEnabled) ...[
+                const SizedBox(height: 8.0),
+                FloatingActionButton(
+                  onPressed: _toogleZoomState,
+                  backgroundColor:
+                      widget.isZoomEnabled ? Colors.blue : Colors.white,
+                  foregroundColor:
+                      widget.isZoomEnabled ? Colors.white : Colors.black54,
+                  child: widget.isZoomLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Icon(Icons.zoom_in),
+                ),
+              ],
             ],
           ] else
             SizedBox(height: _height),

@@ -4,6 +4,7 @@ class KeyboardHandler {
   KeyboardHandler({
     required this.onInspectorStateChanged,
     required this.onColorPickerStateChanged,
+    required this.onZoomStateChanged,
     this.inspectorStateKeys = const [
       LogicalKeyboardKey.alt,
       LogicalKeyboardKey.altLeft,
@@ -14,12 +15,17 @@ class KeyboardHandler {
       LogicalKeyboardKey.shiftLeft,
       LogicalKeyboardKey.shiftRight,
     ],
+    this.zoomStateKeys = const [
+      LogicalKeyboardKey.keyZ,
+    ],
   });
 
   final void Function(bool) onInspectorStateChanged;
   final void Function(bool) onColorPickerStateChanged;
+  final void Function(bool) onZoomStateChanged;
   final List<LogicalKeyboardKey> inspectorStateKeys;
   final List<LogicalKeyboardKey> colorPickerStateKeys;
+  final List<LogicalKeyboardKey> zoomStateKeys;
 
   bool _isRegistered = false;
 
@@ -38,10 +44,14 @@ class KeyboardHandler {
   }
 
   bool _handler(KeyEvent event) {
+    if (event is KeyRepeatEvent) return false;
+
     if (inspectorStateKeys.contains(event.logicalKey)) {
       onInspectorStateChanged(event is! KeyUpEvent);
     } else if (colorPickerStateKeys.contains(event.logicalKey)) {
       onColorPickerStateChanged(event is! KeyUpEvent);
+    } else if (zoomStateKeys.contains(event.logicalKey)) {
+      onZoomStateChanged(event is! KeyUpEvent);
     }
 
     return false;

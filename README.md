@@ -7,7 +7,7 @@
 
 <img src="https://github.com/kekland/inspector/raw/master/img/inspector.png" width="100%">
 
-A Flutter package for inspecting widgets. Also comes with an eyedropper functionality. Useful for debugging widgets and for QA testing.
+A Flutter package for inspecting widgets. Also comes with an eyedropper and a magnifying glass. Useful for debugging widgets and for QA testing.
 
 Supports keyboard shortcuts if you're using a physical keyboard.
 
@@ -27,8 +27,9 @@ Warning, the development of this package is still in progress and some things ma
 - [x] Size inspection
 - [x] Padding inspection
 - [x] Keyboard shortcuts
+- [x] Zooming 
 - [ ] `BorderRadius` inspection
-- [ ] `TextStyle` inspection 
+- [x] `TextStyle` inspection 
 
 <br clear="right"/>
 
@@ -65,8 +66,7 @@ with buttons to toggle size inspection and the color picker.
 It's quite straightforward to use, just tap on the widget that you want to measure 
 or tap on the pixel to get its color.
 
-You can also use keyboard shortcuts - `Shift` will toggle the color picker, and 
-`Alt` or `Cmd` will toggle the widget inspector.
+You can also use keyboard shortcuts - `Shift` will toggle the color picker, `Z` will toggle the zoom, and `Alt` or `Cmd` will toggle the widget inspector.
 
 ## Examples
 

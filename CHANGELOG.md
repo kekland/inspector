@@ -1,3 +1,8 @@
+## 2.0.0
+
+* Fixed a bug where using keyboard shortcuts with the color picker would spam a lot of errors in the console.
+* Added a magnifying glass
+
 ## 1.1.4
 
 * Fix color picker index going out of bounds

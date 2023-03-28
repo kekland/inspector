@@ -37,7 +37,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
         Icon(
           icon,
           size: 20.0,
-          color: iconColor ?? theme.textTheme.caption?.color,
+          color: iconColor ?? theme.textTheme.bodySmall?.color,
         ),
         const SizedBox(width: 12.0),
         Column(
@@ -47,7 +47,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
             const SizedBox(height: 0.0),
             Text(
               subtitle,
-              style: theme.textTheme.caption?.copyWith(fontSize: 10.0),
+              style: theme.textTheme.bodySmall?.copyWith(fontSize: 10.0),
             ),
           ],
         ),
@@ -220,7 +220,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
                 Expanded(
                   child: Text(
                     describeIdentity(boxInfo.targetRenderBox),
-                    style: theme.textTheme.caption,
+                    style: theme.textTheme.bodySmall,
                   ),
                 ),
                 TextButton(
