@@ -139,6 +139,11 @@ class _InspectorState extends State<Inspector> {
       return;
     }
 
+    if (_zoomStateNotifier.value) {
+      _onZoomStateChanged(false);
+      return;
+    }
+
     if (!_inspectorStateNotifier.value) {
       return;
     }
@@ -163,8 +168,14 @@ class _InspectorState extends State<Inspector> {
   }
 
   void _onPointerMove(Offset pointerOffset) {
+    _pointerHoverPosition = pointerOffset;
+
     if (_colorPickerStateNotifier.value) {
       _onColorPickerHover(pointerOffset);
+    }
+
+    if (_zoomStateNotifier.value) {
+      _onZoomHover(pointerOffset);
     }
   }
 

@@ -1,3 +1,7 @@
+## 2.0.1
+
+* Fixed a minor bug with zoom gestures not working properly on mobile platforms.
+
 ## 2.0.0
 
 * Fixed a bug where using keyboard shortcuts with the color picker would spam a lot of errors in the console.
