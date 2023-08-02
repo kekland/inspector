@@ -80,11 +80,33 @@ class Inspector extends StatefulWidget {
   final List<LogicalKeyboardKey> zoomShortcuts;
   final bool? isEnabled;
 
+  static InspectorState of(BuildContext context) {
+    final InspectorState? result = maybeOf(context);
+    if (result != null) {
+      return result;
+    }
+    throw FlutterError.fromParts([
+      ErrorSummary(
+        "Inspector.of() error.",
+      ),
+      context.describeElement("the context"),
+    ]);
+  }
+
+  static InspectorState? maybeOf(BuildContext? context) {
+    return context?.findAncestorStateOfType<InspectorState>();
+  }
+
   @override
-  _InspectorState createState() => _InspectorState();
+  InspectorState createState() => InspectorState();
 }
 
-class _InspectorState extends State<Inspector> {
+class InspectorState extends State<Inspector> {
+  bool _isPanelVisible = false;
+  bool get isPanelVisible => _isPanelVisible;
+
+  void togglePanelVisibility() => setState(() => _isPanelVisible = !_isPanelVisible);
+
   final _stackKey = GlobalKey();
   final _repaintBoundaryKey = GlobalKey();
   final _absorbPointerKey = GlobalKey();
@@ -111,6 +133,7 @@ class _InspectorState extends State<Inspector> {
 
   @override
   void initState() {
+    _isPanelVisible = widget.isPanelVisible;
     super.initState();
 
     _keyboardHandler = KeyboardHandler(
@@ -352,6 +375,10 @@ class _InspectorState extends State<Inspector> {
     }
 
     super.didUpdateWidget(oldWidget);
+
+    if (widget.isPanelVisible != oldWidget.isPanelVisible) {
+      _isPanelVisible = widget.isPanelVisible;
+    }
   }
 
   @override
@@ -497,7 +524,7 @@ class _InspectorState extends State<Inspector> {
               );
             },
           ),
-        if (widget.isPanelVisible)
+        if (_isPanelVisible)
           Align(
             alignment: Alignment.centerRight,
             child: MultiValueListenableBuilder(
