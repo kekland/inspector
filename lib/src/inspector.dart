@@ -105,7 +105,8 @@ class InspectorState extends State<Inspector> {
   bool _isPanelVisible = false;
   bool get isPanelVisible => _isPanelVisible;
 
-  void togglePanelVisibility() => setState(() => _isPanelVisible = !_isPanelVisible);
+  void togglePanelVisibility() =>
+      setState(() => _isPanelVisible = !_isPanelVisible);
 
   final _stackKey = GlobalKey();
   final _repaintBoundaryKey = GlobalKey();
