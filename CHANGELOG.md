@@ -1,3 +1,7 @@
+## 2.1.0
+
+* Made `InspectorState` public to allow the developers to toggle the state of Inspector on/off. Thanks https://github.com/lublak!
+
 ## 2.0.1
 
 * Fixed a minor bug with zoom gestures not working properly on mobile platforms.
