@@ -48,6 +48,7 @@ class Inspector extends StatefulWidget {
     this.isPanelVisible = true,
     this.isWidgetInspectorEnabled = true,
     this.isColorPickerEnabled = true,
+    this.isColorPickerColorSchemeHintEnabled = true,
     this.isZoomEnabled = true,
     this.widgetInspectorShortcuts = const [
       LogicalKeyboardKey.alt,
@@ -74,6 +75,7 @@ class Inspector extends StatefulWidget {
   final bool isWidgetInspectorEnabled;
   final bool isColorPickerEnabled;
   final bool isZoomEnabled;
+  final bool isColorPickerColorSchemeHintEnabled;
   final Alignment alignment;
   final List<LogicalKeyboardKey> widgetInspectorShortcuts;
   final List<LogicalKeyboardKey> colorPickerShortcuts;
@@ -463,6 +465,8 @@ class InspectorState extends State<Inspector> {
                 top: offset.dy - 64.0,
                 child: ColorPickerOverlay(
                   color: color,
+                  isColorSchemeHintEnabled:
+                      widget.isColorPickerColorSchemeHintEnabled,
                 ),
               );
             },

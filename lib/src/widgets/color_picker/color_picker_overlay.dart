@@ -7,15 +7,24 @@ class ColorPickerOverlay extends StatelessWidget {
   const ColorPickerOverlay({
     Key? key,
     required this.color,
+    required this.isColorSchemeHintEnabled,
   }) : super(key: key);
 
   final Color color;
+  final bool isColorSchemeHintEnabled;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final match =
-        ColorSchemeInspector.identifyColorSchemeMatch(color, colorScheme);
+    final String? match;
+
+    if (isColorSchemeHintEnabled) {
+      match = ColorSchemeInspector.identifyColorSchemeMatch(color, colorScheme);
+    } else {
+      match = null;
+    }
+
+    final colorString = colorToHexString(color);
     return Container(
       width: 102.0,
       height: 102.0,
@@ -34,7 +43,7 @@ class ColorPickerOverlay extends StatelessWidget {
       child: Material(
         type: MaterialType.transparency,
         child: Text(
-          '${colorToHexString(color)} $match',
+          match != null ? '$colorString $match' : colorString,
           style: TextStyle(
             color: getTextColorOnBackground(color),
             fontSize: 12.0,
