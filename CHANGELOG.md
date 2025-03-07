@@ -1,3 +1,7 @@
+## 3.0.0
+
+* Bump Flutter version to >=3.22.0
+
 ## 2.2.0
 
 * Added ColorScheme hints when using the color picker. Can be optionally disabled by passing `isColorPickerColorSchemeHintEnabled: false`. Thanks https://github.com/JoseAlba!
