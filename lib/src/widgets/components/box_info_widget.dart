@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../inspector/box_info.dart';
 import 'box_info_panel_widget.dart';
+import 'distance_indicator_widget.dart';
 import 'information_box_widget.dart';
 import 'overlay_painter.dart';
 
@@ -86,6 +87,13 @@ class BoxInfoWidget extends StatelessWidget {
             ),
           ),
         ],
+        if (boxInfo?.targetRenderBox.attached == true &&
+            comparedBoxInfo?.targetRenderBox.attached == true)
+          DistanceIndicatorWidget(
+            boxInfo: boxInfo!,
+            comparedBoxInfo: comparedBoxInfo!,
+            color: const Color(0xFFc04000),
+          ),
       ],
     );
   }
