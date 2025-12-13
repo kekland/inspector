@@ -62,7 +62,6 @@ class _InspectorPanelState extends State<InspectorPanel> {
   @override
   Widget build(BuildContext context) {
     final mode = controller.modeNotifier.value;
-    final isByteDataLoading = controller.byteDataStateNotifier.value == null;
 
     final _height = 16.0 +
         (controller.isWidgetInspectorEnabled ? 56.0 : 0.0) +
@@ -114,9 +113,7 @@ class _InspectorPanelState extends State<InspectorPanel> {
                 foregroundColor: mode == InspectorMode.colorPicker
                     ? Colors.white
                     : Colors.black54,
-                child: isByteDataLoading && mode == InspectorMode.colorPicker
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Icon(Icons.colorize),
+                child: const Icon(Icons.colorize),
               ),
             ],
             if (controller.isZoomEnabled) ...[
@@ -131,9 +128,7 @@ class _InspectorPanelState extends State<InspectorPanel> {
                     mode == InspectorMode.zoom ? Colors.blue : Colors.white,
                 foregroundColor:
                     mode == InspectorMode.zoom ? Colors.white : Colors.black54,
-                child: isByteDataLoading && mode == InspectorMode.zoom
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Icon(Icons.zoom_in),
+                child: const Icon(Icons.zoom_in),
               ),
             ],
           ] else
