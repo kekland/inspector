@@ -14,7 +14,7 @@ class InspectorPanel extends StatefulWidget {
 }
 
 class _InspectorPanelState extends State<InspectorPanel> {
-  bool _isVisible = false;
+  bool _isVisible = true;
 
   InspectorController get controller => widget.controller;
 
