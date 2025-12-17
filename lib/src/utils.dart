@@ -27,42 +27,20 @@ class InspectorUtils {
     RenderObject renderObject,
     Offset globalOffset,
   ) sync* {
-    // Check bounds for boxes
     if (renderObject is RenderBox) {
       final local = renderObject.globalToLocal(globalOffset);
-      if (!renderObject.paintBounds.contains(local)) return;
-    }
 
-    // Recurse into children
-    if (renderObject is RenderViewportBase) {
-      final children = <RenderSliver>[];
-      renderObject.visitChildren((child) {
-        if (child is RenderSliver) children.add(child);
-      });
-
-      for (final sliver in children) {
-        yield* _collectAt(sliver, globalOffset);
-      }
-    } else if (renderObject is RenderStack) {
-      final children = <RenderObject>[];
-      renderObject.visitChildren(children.add);
-
-      // reverse order: last painted = topmost visually
-      for (final child in children.reversed) {
-        yield* _collectAt(child, globalOffset);
-      }
-    } else {
-      final children = <RenderObject>[];
-      renderObject.visitChildren(children.add);
-
-      for (final child in children) {
-        yield* _collectAt(child, globalOffset);
+      if ((Offset.zero & renderObject.size).contains(local)) {
+        yield renderObject;
       }
     }
 
-    // Include box
-    if (renderObject is RenderBox) {
-      yield renderObject;
+    final children = <RenderObject>[];
+    renderObject.visitChildren(children.add);
+
+    // Reverse order for Stack like ordering
+    for (final child in children.reversed) {
+      yield* _collectAt(child, globalOffset);
     }
   }
 
