@@ -27,7 +27,9 @@ class _InspectorOverlayState extends State<InspectorOverlay>
   late final Ticker _ticker;
 
   // Store the last known rect to detect zoom changes
-  Rect? _lastTargetRect;
+  Rect? _lastBoxInfoTargetRect;
+  Rect? _lastHoverBoxInfoTargetRect;
+  Rect? _lastComparedBoxInfoTargetRect;
 
   bool _canRender(BoxInfo? boxInfo) =>
       boxInfo?.targetRenderBox.attached ?? false;
@@ -42,13 +44,33 @@ class _InspectorOverlayState extends State<InspectorOverlay>
   void _onTick(Duration elapsed) {
     if (!mounted) return;
 
-    // Get current rect from boxInfo
-    final currentRect = widget.boxInfo?.targetRectShifted ??
-        widget.hoveredBoxInfo?.targetRectShifted;
+    // Check if any box can be rendered
+    final canRenderBox = _canRender(widget.boxInfo);
+    final canRenderHovered = _canRender(widget.hoveredBoxInfo);
+    final canRenderCompared = _canRender(widget.comparedBoxInfo);
 
-    // Rebuild if the rect has changed (eg: zoom/pan occurred)
-    if (currentRect != _lastTargetRect) {
-      _lastTargetRect = currentRect;
+    if (!canRenderBox && !canRenderHovered && !canRenderCompared) {
+      _lastBoxInfoTargetRect = null;
+      _lastHoverBoxInfoTargetRect = null;
+      _lastComparedBoxInfoTargetRect = null;
+      return;
+    }
+
+    // Get current rects
+    final currentBoxRect =
+        canRenderBox ? widget.boxInfo!.targetRectShifted : null;
+    final currentHoverRect =
+        canRenderHovered ? widget.hoveredBoxInfo!.targetRectShifted : null;
+    final currentComparedRect =
+        canRenderCompared ? widget.comparedBoxInfo!.targetRectShifted : null;
+
+    // Rebuild if any rect has changed (Need for zoom/pan occurred)
+    if (currentBoxRect != _lastBoxInfoTargetRect ||
+        currentHoverRect != _lastHoverBoxInfoTargetRect ||
+        currentComparedRect != _lastComparedBoxInfoTargetRect) {
+      _lastBoxInfoTargetRect = currentBoxRect;
+      _lastHoverBoxInfoTargetRect = currentHoverRect;
+      _lastComparedBoxInfoTargetRect = currentComparedRect;
       setState(() {});
     }
   }

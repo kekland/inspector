@@ -122,7 +122,7 @@ class InspectorState extends State<Inspector> {
 
   final _stackKey = GlobalKey();
   final _repaintBoundaryKey = GlobalKey();
-  final _absorbPointerKey = GlobalKey();
+  final _ignoringbPointerKey = GlobalKey();
   ui.Image? _image;
 
   final _byteDataStateNotifier = ValueNotifier<ByteData?>(null);
@@ -172,7 +172,7 @@ class InspectorState extends State<Inspector> {
 
   BoxInfo? _computeBoxInfoAt(Offset offset, {bool findContainer = false}) {
     final boxes = InspectorUtils.findRenderObjectsAt(
-        _absorbPointerKey.currentContext!, offset);
+        _ignoringbPointerKey.currentContext!, offset);
 
     if (boxes.isEmpty) return null;
 
@@ -531,8 +531,9 @@ class InspectorState extends State<Inspector> {
             builder: (context) {
               Widget _child = widget.child;
 
-              final isAbsorbingPointer =
-                  _colorPickerStateNotifier.value || _zoomStateNotifier.value;
+              final isIgnoringPointer = _colorPickerStateNotifier.value ||
+                  _inspectorStateNotifier.value ||
+                  _zoomStateNotifier.value;
 
               return MouseRegion(
                 onExit: (e) => _onPointerExit(e.position),
@@ -549,9 +550,9 @@ class InspectorState extends State<Inspector> {
                   },
                   child: RepaintBoundary(
                     key: _repaintBoundaryKey,
-                    child: AbsorbPointer(
-                      key: _absorbPointerKey,
-                      absorbing: isAbsorbingPointer,
+                    child: IgnorePointer(
+                      key: _ignoringbPointerKey,
+                      ignoring: isIgnoringPointer,
                       child: _child,
                     ),
                   ),
