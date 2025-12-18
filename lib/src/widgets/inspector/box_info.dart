@@ -137,10 +137,15 @@ class BoxInfo {
   }
 }
 
-Rect? getRectFromRenderBox(RenderBox renderBox) {
-  return renderBox.attached
-      ? (renderBox.localToGlobal(Offset.zero)) & renderBox.size
-      : null;
+Rect? getRectFromRenderBox(RenderBox renderBox, {Matrix4? transformationMatrix}) {
+  if (!renderBox.attached) return null;
+
+  final topLeft = renderBox.localToGlobal(Offset.zero);
+  final bottomRight = renderBox.localToGlobal(
+    Offset(renderBox.size.width, renderBox.size.height),
+  );
+
+  return Rect.fromPoints(topLeft, bottomRight);
 }
 
 double calculateBoxPosition({
