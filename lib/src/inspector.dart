@@ -531,9 +531,8 @@ class InspectorState extends State<Inspector> {
             builder: (context) {
               Widget _child = widget.child;
 
-              final isAbsorbingPointer = _colorPickerStateNotifier.value ||
-                  _inspectorStateNotifier.value ||
-                  _zoomStateNotifier.value;
+              final isAbsorbingPointer =
+                  _colorPickerStateNotifier.value || _zoomStateNotifier.value;
 
               return MouseRegion(
                 onExit: (e) => _onPointerExit(e.position),
