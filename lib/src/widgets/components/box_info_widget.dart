@@ -31,7 +31,7 @@ class BoxInfoWidget extends StatelessWidget {
       child: IgnorePointer(
         child: Align(
           child: InformationBoxWidget.size(
-            size: boxInfo!.targetRect.size,
+            size: boxInfo!.targetRenderBox.size,
             color: _targetColor,
           ),
         ),

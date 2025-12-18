@@ -62,15 +62,31 @@ class BoxInfo {
       ? getRectFromRenderBox(containerRenderBox!)
       : null;
 
-  Rect get containerRectShifted => targetRect.shift(-overlayOffset);
+  /// Calculate original padding by comparing positions in local coordinates
+  EdgeInsets _calculateOriginalPadding() {
+    if (containerRenderBox == null) return EdgeInsets.zero;
 
-  double? get paddingLeft => paddingRectLeft?.width;
+    // Get the target's position relative to the container
+    final targetOffset = targetRenderBox.localToGlobal(Offset.zero);
+    final containerOffset = containerRenderBox!.localToGlobal(Offset.zero);
 
-  double? get paddingRight => paddingRectRight?.width;
+    // Calculate scale factor from the transformation
+    final scaledTargetSize = targetRect.size;
+    final originalTargetSize = targetRenderBox.size;
+    final scale = originalTargetSize.width > 0
+        ? scaledTargetSize.width / originalTargetSize.width
+        : 1.0;
 
-  double? get paddingTop => paddingRectTop?.height;
+    // Calculate padding in original coordinates
+    final left = (targetOffset.dx - containerOffset.dx) / scale;
+    final top = (targetOffset.dy - containerOffset.dy) / scale;
+    final right =
+        containerRenderBox!.size.width - originalTargetSize.width - left;
+    final bottom =
+        containerRenderBox!.size.height - originalTargetSize.height - top;
 
-  double? get paddingBottom => paddingRectBottom?.height;
+    return EdgeInsets.fromLTRB(left, top, right, bottom);
+  }
 
   Rect? get paddingRectLeft => containerRect != null
       ? Rect.fromLTRB(
@@ -108,13 +124,14 @@ class BoxInfo {
         )
       : null;
 
-  String describePadding() {
-    assert(containerRect != null);
+  /// Describes the original (logical) padding without zoom transformation.
+  String describeOriginalPadding() {
+    final padding = _calculateOriginalPadding();
 
-    final _left = paddingLeft!.toStringAsFixed(1);
-    final _top = paddingTop!.toStringAsFixed(1);
-    final _right = paddingRight!.toStringAsFixed(1);
-    final _bottom = paddingBottom!.toStringAsFixed(1);
+    final _left = padding.left.toStringAsFixed(1);
+    final _top = padding.top.toStringAsFixed(1);
+    final _right = padding.right.toStringAsFixed(1);
+    final _bottom = padding.bottom.toStringAsFixed(1);
 
     return '$_left, $_top, $_right, $_bottom';
   }
@@ -137,7 +154,8 @@ class BoxInfo {
   }
 }
 
-Rect? getRectFromRenderBox(RenderBox renderBox, {Matrix4? transformationMatrix}) {
+Rect? getRectFromRenderBox(RenderBox renderBox,
+    {Matrix4? transformationMatrix}) {
   if (!renderBox.attached) return null;
 
   final topLeft = renderBox.localToGlobal(Offset.zero);

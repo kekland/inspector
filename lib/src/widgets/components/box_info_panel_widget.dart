@@ -74,7 +74,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
           icon: Icons.format_shapes,
           subtitle: 'size',
           child: Text(
-            '${boxInfo.targetRect.width.toStringAsFixed(1)} × ${boxInfo.targetRect.height.toStringAsFixed(1)}',
+            '${boxInfo.targetRenderBox.size.width.toStringAsFixed(1)} × ${boxInfo.targetRenderBox.size.height.toStringAsFixed(1)}',
           ),
           backgroundColor: theme.chipTheme.backgroundColor,
         ),
@@ -83,7 +83,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
             context,
             icon: Icons.straighten,
             subtitle: 'padding (LTRB)',
-            child: Text(boxInfo.describePadding()),
+            child: Text(boxInfo.describeOriginalPadding()),
             backgroundColor: theme.chipTheme.backgroundColor,
           ),
       ],
@@ -94,6 +94,12 @@ class BoxInfoPanelWidget extends StatelessWidget {
     final theme = Theme.of(context);
     final from = boxInfo.targetRect;
     final to = comparedBoxInfo!.targetRect;
+
+    // Calculate scale factor from the transformation
+    final scaledSize = boxInfo.targetRect.size;
+    final originalSize = boxInfo.targetRenderBox.size;
+    final scale =
+        originalSize.width > 0 ? scaledSize.width / originalSize.width : 1.0;
 
     double left = 0, right = 0, top = 0, bottom = 0;
 
@@ -122,6 +128,12 @@ class BoxInfoPanelWidget extends StatelessWidget {
       top = (from.top - to.top).abs();
       bottom = (from.bottom - to.bottom).abs();
     }
+
+    // Convert distances to original (unzoomed) coordinates
+    left /= scale;
+    right /= scale;
+    top /= scale;
+    bottom /= scale;
 
     return Wrap(
       spacing: 12.0,
