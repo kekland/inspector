@@ -10,6 +10,7 @@ class BoxInfo {
     required this.targetRenderBox,
     this.containerRenderBox,
     this.overlayOffset = Offset.zero,
+    this.hitTestPath = const <RenderBox>[],
   });
 
   factory BoxInfo.fromHitTestResults(
@@ -17,6 +18,8 @@ class BoxInfo {
     Offset overlayOffset = Offset.zero,
     bool findContainer = false,
   }) {
+    final hitTestPath = List<RenderBox>.unmodifiable(boxes);
+
     RenderBox targetRenderBox = boxes.first;
     RenderBox? containerRenderBox;
 
@@ -46,6 +49,7 @@ class BoxInfo {
       targetRenderBox: targetRenderBox,
       containerRenderBox: containerRenderBox,
       overlayOffset: overlayOffset,
+      hitTestPath: hitTestPath,
     );
   }
 
@@ -53,6 +57,12 @@ class BoxInfo {
   final RenderBox? containerRenderBox;
 
   final Offset overlayOffset;
+
+  /// Render boxes found under the pointer during hit-testing, in traversal order.
+  ///
+  /// This is intentionally kept separate from [targetRenderBox] selection logic
+  /// so UI panels can derive additional context (e.g., nearest decorated box).
+  final List<RenderBox> hitTestPath;
 
   Rect get targetRect => getRectFromRenderBox(targetRenderBox)!;
 
