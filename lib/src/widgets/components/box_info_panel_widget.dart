@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:inspector/src/widgets/color_picker/utils.dart';
 import 'package:inspector/src/widgets/inspector/box_info.dart';
+import 'package:inspector/src/widgets/inspector/render_box_extension.dart';
 
 class BoxInfoPanelWidget extends StatelessWidget {
   const BoxInfoPanelWidget({
@@ -64,6 +65,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
 
   Widget _buildMainRow(BuildContext context) {
     final theme = Theme.of(context);
+    final displaySize = boxInfo.targetRenderBox.displaySize;
 
     return Wrap(
       spacing: 12.0,
@@ -74,7 +76,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
           icon: Icons.format_shapes,
           subtitle: 'size',
           child: Text(
-            '${boxInfo.targetRenderBox.size.width.toStringAsFixed(1)} × ${boxInfo.targetRenderBox.size.height.toStringAsFixed(1)}',
+            '${displaySize.width.toStringAsFixed(1)} × ${displaySize.height.toStringAsFixed(1)}',
           ),
           backgroundColor: theme.chipTheme.backgroundColor,
         ),
