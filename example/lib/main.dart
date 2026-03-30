@@ -32,7 +32,7 @@ class _ExampleAppState extends State<ExampleApp> {
         width: 32.0,
         height: 32.0,
         decoration: BoxDecoration(
-          color: Theme.of(context).primaryColor,
+          color: Colors.purple,
           borderRadius: BorderRadius.circular(16.0),
         ),
         alignment: Alignment.center,

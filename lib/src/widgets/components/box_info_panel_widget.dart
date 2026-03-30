@@ -162,7 +162,6 @@ class BoxInfoPanelWidget extends StatelessWidget {
     return '${f(resolved.topLeft.x)}, ${f(resolved.topRight.x)}, ${f(resolved.bottomRight.x)}, ${f(resolved.bottomLeft.x)}';
   }
 
-
   RenderDecoratedBox? _findSelectedDecoratedBox() {
     final target = boxInfo.targetRenderBox;
     return target is RenderDecoratedBox ? target : null;
@@ -174,7 +173,21 @@ class BoxInfoPanelWidget extends StatelessWidget {
     // Use the hitTestPath to locate the nearest decorated box in the same
     // subtree under the pointer.
     for (final box in boxInfo.hitTestPath) {
+      if (box.size != boxInfo.targetRect.size) return null;
       if (box is RenderDecoratedBox) return box;
+    }
+    return null;
+  }
+
+  RenderDecoratedBox? _findChildDecoratedBoxFromTarget() {
+    final target = boxInfo.targetRenderBox;
+    if (target is RenderProxyBoxMixin) {
+      final child = target.child;
+      if (child != null &&
+          child.size == target.size &&
+          child is RenderDecoratedBox) {
+        return child;
+      }
     }
     return null;
   }
@@ -182,7 +195,9 @@ class BoxInfoPanelWidget extends StatelessWidget {
   RenderDecoratedBox? _findDecoratedBoxForDisplay() {
     // Prefer the selected render object when it is decorated; otherwise, fall
     // back to the nearest decorated box under the pointer.
-    return _findSelectedDecoratedBox() ?? _findNearestDecoratedBoxFromHitTestPath();
+    return _findSelectedDecoratedBox() ??
+        _findNearestDecoratedBoxFromHitTestPath() ??
+        _findChildDecoratedBoxFromTarget();
   }
 
   bool _hasSelectedDecoratedInfo() {
@@ -213,19 +228,17 @@ class BoxInfoPanelWidget extends StatelessWidget {
     final decoration = renderDecoratedBox.decoration;
     if (decoration is! BoxDecoration) return const SizedBox.shrink();
 
-    final borderRadius = decoration.borderRadius;
-
     return Wrap(
       spacing: 12.0,
       runSpacing: 8.0,
       children: [
-        if (borderRadius != null)
+        if (decoration.borderRadius != null)
           _buildInfoRow(
             context,
             icon: Icons.rounded_corner,
             subtitle: 'border radius (LTRB)',
             backgroundColor: theme.chipTheme.backgroundColor,
-            child: Text(_formatBorderRadiusLTRB(borderRadius)),
+            child: Text(_formatBorderRadiusLTRB(decoration.borderRadius!)),
           ),
         if (decoration.shape != BoxShape.rectangle)
           _buildInfoRow(
@@ -354,7 +367,8 @@ class BoxInfoPanelWidget extends StatelessWidget {
 
     final target = boxInfo.targetRenderBox;
     final isSelectedParagraph = target is RenderParagraph;
-    final hasSelectedDecoration = !isSelectedParagraph && _hasSelectedDecoratedInfo();
+    final hasSelectedDecoration =
+        !isSelectedParagraph && _hasSelectedDecoratedInfo();
 
     return Card(
       child: SizedBox(
