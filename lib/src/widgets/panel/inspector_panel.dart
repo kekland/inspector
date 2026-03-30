@@ -1,87 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:inspector/src/inspector_controller.dart';
 
 class InspectorPanel extends StatefulWidget {
   const InspectorPanel({
     Key? key,
-    required this.isInspectorEnabled,
-    required this.isInspectAndCompareEnabled,
-    required this.isColorPickerEnabled,
-    this.onInspectorStateChanged,
-    this.onInspectAndCompareChanged,
-    this.onColorPickerStateChanged,
-    required this.isColorPickerLoading,
-    required this.isZoomEnabled,
-    this.onZoomStateChanged,
-    required this.isZoomLoading,
+    required this.controller,
   }) : super(key: key);
 
-  final bool isInspectorEnabled;
-  final ValueChanged<bool>? onInspectorStateChanged;
-
-  final bool isInspectAndCompareEnabled;
-  final ValueChanged<bool>? onInspectAndCompareChanged;
-
-  final bool isColorPickerEnabled;
-  final ValueChanged<bool>? onColorPickerStateChanged;
-
-  final bool isZoomEnabled;
-  final ValueChanged<bool>? onZoomStateChanged;
-
-  final bool isColorPickerLoading;
-  final bool isZoomLoading;
+  final InspectorController controller;
 
   @override
-  _InspectorPanelState createState() => _InspectorPanelState();
+  State<InspectorPanel> createState() => _InspectorPanelState();
 }
 
 class _InspectorPanelState extends State<InspectorPanel> {
   bool _isVisible = true;
 
-  bool get _isInspectorEnabled => widget.onInspectorStateChanged != null;
-
-  bool get _isColorPickerEnabled => widget.onColorPickerStateChanged != null;
-
-  bool get _isZoomEnabled => widget.onZoomStateChanged != null;
+  InspectorController get controller => widget.controller;
 
   void _toggleVisibility() {
     setState(() => _isVisible = !_isVisible);
   }
 
-  void _toggleInspectorState() {
-    assert(_isInspectorEnabled);
-    widget.onInspectorStateChanged!(!widget.isInspectorEnabled);
-  }
-
-  void _toggleColorPickerState() {
-    assert(_isColorPickerEnabled);
-    widget.onColorPickerStateChanged!(!widget.isColorPickerEnabled);
-  }
-
-  void _toogleZoomState() {
-    assert(_isZoomEnabled);
-    widget.onZoomStateChanged!(!widget.isZoomEnabled);
-  }
-
   IconData get _visibilityButtonIcon {
     if (_isVisible) return Icons.chevron_right;
 
-    if (widget.isInspectorEnabled) {
-      return Icons.format_shapes;
-    } else if (widget.isColorPickerEnabled) {
-      return Icons.colorize;
-    } else if (widget.isZoomEnabled) {
-      return Icons.zoom_in;
+    final mode = controller.modeNotifier.value;
+    switch (mode) {
+      case InspectorMode.inspector:
+      case InspectorMode.inspectAndCompare:
+        return Icons.format_shapes;
+      case InspectorMode.colorPicker:
+        return Icons.colorize;
+      case InspectorMode.zoom:
+        return Icons.zoom_in;
+      case InspectorMode.none:
+        return Icons.chevron_left;
     }
-
-    return Icons.chevron_left;
   }
 
   Color get _visibilityButtonBackgroundColor {
     if (_isVisible) return Colors.white;
 
-    if (widget.isInspectorEnabled ||
-        widget.isColorPickerEnabled ||
-        widget.isZoomEnabled) {
+    if (controller.modeNotifier.value != InspectorMode.none) {
       return Colors.blue;
     }
 
@@ -91,9 +52,7 @@ class _InspectorPanelState extends State<InspectorPanel> {
   Color get _visibilityButtonForegroundColor {
     if (_isVisible) return Colors.black54;
 
-    if (widget.isInspectorEnabled ||
-        widget.isColorPickerEnabled ||
-        widget.isZoomEnabled) {
+    if (controller.modeNotifier.value != InspectorMode.none) {
       return Colors.white;
     }
 
@@ -102,10 +61,12 @@ class _InspectorPanelState extends State<InspectorPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final mode = controller.modeNotifier.value;
+
     final _height = 16.0 +
-        (_isInspectorEnabled ? 56.0 : 0.0) +
-        (_isColorPickerEnabled ? 64.0 : 0.0) +
-        (_isZoomEnabled ? 64.0 : 0.0);
+        (controller.isWidgetInspectorEnabled ? 56.0 : 0.0) +
+        (controller.isColorPickerEnabled ? 64.0 : 0.0) +
+        (controller.isZoomEnabled ? 64.0 : 0.0);
 
     return Padding(
       padding: const EdgeInsets.only(right: 8.0),
@@ -122,40 +83,53 @@ class _InspectorPanelState extends State<InspectorPanel> {
           ),
           if (_isVisible) ...[
             const SizedBox(height: 16.0),
-            if (_isInspectorEnabled)
+            if (controller.isWidgetInspectorEnabled)
               FloatingActionButton(
-                onPressed: _toggleInspectorState,
-                backgroundColor:
-                    widget.isInspectorEnabled ? Colors.blue : Colors.white,
-                foregroundColor:
-                    widget.isInspectorEnabled ? Colors.white : Colors.black54,
+                onPressed: () => controller.setMode(
+                  mode == InspectorMode.inspector
+                      ? InspectorMode.none
+                      : InspectorMode.inspector,
+                ),
+                backgroundColor: mode == InspectorMode.inspector
+                    ? Colors.blue
+                    : Colors.white,
+                foregroundColor: mode == InspectorMode.inspector
+                    ? Colors.white
+                    : Colors.black54,
                 child: const Icon(Icons.format_shapes),
               ),
-            if (_isColorPickerEnabled) ...[
+            if (controller.isColorPickerEnabled) ...[
               const SizedBox(height: 8.0),
               FloatingActionButton(
-                onPressed: _toggleColorPickerState,
-                backgroundColor:
-                    widget.isColorPickerEnabled ? Colors.blue : Colors.white,
-                foregroundColor:
-                    widget.isColorPickerEnabled ? Colors.white : Colors.black54,
-                child: widget.isColorPickerLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Icon(Icons.colorize),
-              ),
-              if (_isZoomEnabled) ...[
-                const SizedBox(height: 8.0),
-                FloatingActionButton(
-                  onPressed: _toogleZoomState,
-                  backgroundColor:
-                      widget.isZoomEnabled ? Colors.blue : Colors.white,
-                  foregroundColor:
-                      widget.isZoomEnabled ? Colors.white : Colors.black54,
-                  child: widget.isZoomLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Icon(Icons.zoom_in),
+                onPressed: () => controller.setMode(
+                  mode == InspectorMode.colorPicker
+                      ? InspectorMode.none
+                      : InspectorMode.colorPicker,
+                  context: context,
                 ),
-              ],
+                backgroundColor: mode == InspectorMode.colorPicker
+                    ? Colors.blue
+                    : Colors.white,
+                foregroundColor: mode == InspectorMode.colorPicker
+                    ? Colors.white
+                    : Colors.black54,
+                child: const Icon(Icons.colorize),
+              ),
+            ],
+            if (controller.isZoomEnabled) ...[
+              const SizedBox(height: 8.0),
+              FloatingActionButton(
+                onPressed: () => controller.setMode(
+                  mode == InspectorMode.zoom
+                      ? InspectorMode.none
+                      : InspectorMode.zoom,
+                ),
+                backgroundColor:
+                    mode == InspectorMode.zoom ? Colors.blue : Colors.white,
+                foregroundColor:
+                    mode == InspectorMode.zoom ? Colors.white : Colors.black54,
+                child: const Icon(Icons.zoom_in),
+              ),
             ],
           ] else
             SizedBox(height: _height),

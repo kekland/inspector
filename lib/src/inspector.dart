@@ -1,21 +1,14 @@
-import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
-import 'package:inspector/src/keyboard_handler.dart';
+import 'package:inspector/src/inspector_controller.dart';
 import 'package:inspector/src/widgets/ignore_tap_gesture.dart';
 import 'package:inspector/src/widgets/zoom/zoom_overlay.dart';
+import 'package:inspector/src/widgets/zoomable_color_picker/zoomable_color_picker.dart';
 
 import './widgets/panel/inspector_panel.dart';
-import 'utils.dart';
-import 'widgets/color_picker/color_picker_overlay.dart';
-import 'widgets/color_picker/color_picker_snackbar.dart';
-import 'widgets/color_picker/utils.dart';
-import 'widgets/inspector/box_info.dart';
 import 'widgets/inspector/overlay.dart';
 import 'widgets/multi_value_listenable.dart';
 
@@ -28,15 +21,6 @@ import 'widgets/multi_value_listenable.dart';
 /// If [isEnabled] is [null], then [Inspector] is automatically disabled on
 /// production builds (i.e. [kReleaseMode] is [true]).
 ///
-/// You can disable the widget inspector or the color picker by passing [false]
-/// to either [isWidgetInspectorEnabled] or [isColorPickerEnabled].
-///
-/// There are also keyboard shortcuts for the widget inspector and the color
-/// picker. By default, pressing **Shift** will enable the color picker, and
-/// pressing **Command** or **Alt** will enable the widget inspector. Those
-/// shortcuts can be changed through [widgetInspectorShortcuts] and
-/// [colorPickerShortcuts].
-///
 /// [isPanelVisible] controls the visibility of the control panel - setting it
 /// to [false] will hide the panel, but the other functionality can still be
 /// accessed through keyboard shortcuts. If you want to disable the inspector
@@ -45,52 +29,21 @@ class Inspector extends StatefulWidget {
   const Inspector({
     Key? key,
     required this.child,
+    this.controller,
     this.alignment = Alignment.center,
-    this.areKeyboardShortcutsEnabled = true,
     this.isPanelVisible = true,
-    this.isWidgetInspectorEnabled = true,
-    this.isWidgetInspectorHoverEnabled = true,
-    this.isWidgetInspectAndCompareEnabled = true,
-    this.isColorPickerEnabled = true,
-    this.isColorPickerColorSchemeHintEnabled = true,
-    this.isZoomEnabled = true,
-    this.widgetInspectorShortcuts = const [
-      LogicalKeyboardKey.alt,
-      LogicalKeyboardKey.altLeft,
-      LogicalKeyboardKey.altRight,
-      LogicalKeyboardKey.meta,
-      LogicalKeyboardKey.metaLeft,
-      LogicalKeyboardKey.metaRight,
-    ],
-    this.widgetInspectAndCompareShortcuts = const [
-      LogicalKeyboardKey.keyY,
-    ],
-    this.colorPickerShortcuts = const [
-      LogicalKeyboardKey.shift,
-      LogicalKeyboardKey.shiftLeft,
-      LogicalKeyboardKey.shiftRight,
-    ],
-    this.zoomShortcuts = const [
-      LogicalKeyboardKey.keyZ,
-    ],
     this.isEnabled,
+    this.panelBuilder,
   }) : super(key: key);
 
   final Widget child;
-  final bool areKeyboardShortcutsEnabled;
+  final InspectorController? controller;
   final bool isPanelVisible;
-  final bool isWidgetInspectorEnabled;
-  final bool isWidgetInspectorHoverEnabled;
-  final bool isWidgetInspectAndCompareEnabled;
-  final bool isColorPickerEnabled;
-  final bool isZoomEnabled;
-  final bool isColorPickerColorSchemeHintEnabled;
   final Alignment alignment;
-  final List<LogicalKeyboardKey> widgetInspectorShortcuts;
-  final List<LogicalKeyboardKey> widgetInspectAndCompareShortcuts;
-  final List<LogicalKeyboardKey> colorPickerShortcuts;
-  final List<LogicalKeyboardKey> zoomShortcuts;
   final bool? isEnabled;
+  final Widget Function(
+          BuildContext context, InspectorController controller, Widget child)?
+      panelBuilder;
 
   static InspectorState of(BuildContext context) {
     final InspectorState? result = maybeOf(context);
@@ -121,358 +74,46 @@ class InspectorState extends State<Inspector> {
   void togglePanelVisibility() =>
       setState(() => _isPanelVisible = !_isPanelVisible);
 
-  final _stackKey = GlobalKey();
-  final _repaintBoundaryKey = GlobalKey();
-  final _ignoringPointerKey = GlobalKey();
-  ui.Image? _image;
+  late InspectorController _controller;
+  InspectorController get controller => _controller;
 
-  final _byteDataStateNotifier = ValueNotifier<ByteData?>(null);
-
-  final _currentRenderBoxNotifier = ValueNotifier<BoxInfo?>(null);
-  final _hoveredRenderBoxNotifier = ValueNotifier<BoxInfo?>(null);
-  final _comparedRenderBoxNotifier = ValueNotifier<BoxInfo?>(null);
-
-  final _inspectAndCompareStateNotifier = ValueNotifier<bool>(false);
-  final _inspectorStateNotifier = ValueNotifier<bool>(false);
-  final _colorPickerStateNotifier = ValueNotifier<bool>(false);
-  final _zoomStateNotifier = ValueNotifier<bool>(false);
-
-  final _selectedColorOffsetNotifier = ValueNotifier<Offset?>(null);
-  final _selectedColorStateNotifier = ValueNotifier<Color?>(null);
-
-  final _zoomImageOffsetNotifier = ValueNotifier<Offset?>(null);
-  final _zoomScaleNotifier = ValueNotifier<double>(2.0);
-  final _zoomOverlayOffsetNotifier = ValueNotifier<Offset?>(null);
-
-  late final KeyboardHandler _keyboardHandler;
-
-  Offset? _pointerHoverPosition;
+  static const double _overlayMinSize = 128;
+  static const double _overlayMaxSize = 246;
+  static const double _overlayOffsetY = 16;
 
   @override
   void initState() {
     _isPanelVisible = widget.isPanelVisible;
     super.initState();
 
-    _keyboardHandler = KeyboardHandler(
-      onInspectorStateChanged: _onInspectorStateChanged,
-      onInspectAndCompareChanged: _onInspectAndCompareChanged,
-      onColorPickerStateChanged: _onColorPickerStateChanged,
-      onZoomStateChanged: _onZoomStateChanged,
-      colorPickerStateKeys: widget.colorPickerShortcuts,
-      inspectorStateKeys: widget.widgetInspectorShortcuts,
-      inspectAndCompareKeys: widget.widgetInspectAndCompareShortcuts,
-      zoomStateKeys: widget.zoomShortcuts,
-    );
-
-    if (_isEnabled && widget.areKeyboardShortcutsEnabled) {
-      _keyboardHandler.register();
-    }
-  }
-
-  // Gestures Helper
-
-  BoxInfo? _computeBoxInfoAt(Offset offset, {bool findContainer = false}) {
-    final boxes = InspectorUtils.findRenderObjectsAt(
-        _ignoringPointerKey.currentContext!, offset);
-
-    if (boxes.isEmpty) return null;
-
-    final overlayOffset =
-        (_stackKey.currentContext!.findRenderObject() as RenderStack)
-            .localToGlobal(Offset.zero);
-
-    return BoxInfo.fromHitTestResults(
-      boxes,
-      overlayOffset: overlayOffset,
-      findContainer: findContainer,
-    );
-  }
-
-  // Gestures
-
-  void _onTap(Offset? pointerOffset) {
-    if (_colorPickerStateNotifier.value) {
-      if (pointerOffset != null) {
-        _onColorPickerHover(pointerOffset);
-      }
-
-      _onColorPickerStateChanged(false);
-      return;
-    }
-
-    if (_zoomStateNotifier.value) {
-      _onZoomStateChanged(false);
-      return;
-    }
-
-    if (!_inspectorStateNotifier.value) {
-      return;
-    }
-
-    if (pointerOffset == null) return;
-    _hoveredRenderBoxNotifier.value = null;
-    _comparedRenderBoxNotifier.value = null;
-    _currentRenderBoxNotifier.value = _computeBoxInfoAt(
-      pointerOffset,
-      findContainer: true,
-    );
-  }
-
-  void _onPointerMove(Offset pointerOffset) {
-    _pointerHoverPosition = pointerOffset;
-
-    if (_colorPickerStateNotifier.value) {
-      _onColorPickerHover(pointerOffset);
-    }
-
-    if (_zoomStateNotifier.value) {
-      _onZoomHover(pointerOffset);
-    }
-  }
-
-  Timer? _onPointerHoverDebounce;
-
-  /// Debounces pointer hover events to prevent [_onPointerHover] from being called
-  /// too frequently.
-  ///
-  /// [_onPointerHover] internally calls `_computeBoxInfoAt`, which can be **computationally heavy**,
-  /// because it performs hit-testing and computes layout information for multiple RenderBoxes.
-  ///
-  /// This debounced method ensures that `_computeBoxInfoAt` is **not called more than once per event loop cycle**,
-  /// even if multiple hover events occur in quick succession.
-  ///
-  /// The timer is **not periodic**: it waits until the current `_computeBoxInfoAt` call completes
-  /// before allowing the next one to be scheduled.
-  ///
-  /// [pointerOffset] is the position of the pointer in global coordinates.
-  void _onPointerHoverDebounced(Offset pointerOffset) {
-    if (_onPointerHoverDebounce?.isActive ?? false) return;
-    _onPointerHoverDebounce = Timer(
-      const Duration(milliseconds: 0),
-      () => _onPointerHover(pointerOffset),
-    );
-  }
-
-  void _onPointerHover(Offset pointerOffset) {
-    _pointerHoverPosition = pointerOffset;
-    if (_zoomStateNotifier.value) {
-      _onZoomHover(pointerOffset);
-      return;
-    }
-
-    if (!_inspectorStateNotifier.value) {
-      return;
-    }
-
-    if (_inspectorStateNotifier.value &&
-        _inspectAndCompareStateNotifier.value) {
-      _hoveredRenderBoxNotifier.value = null;
-      final compare = _computeBoxInfoAt(pointerOffset);
-      if (compare?.targetRenderBox !=
-          _currentRenderBoxNotifier.value?.targetRenderBox) {
-        _comparedRenderBoxNotifier.value = compare;
-      } else {
-        _comparedRenderBoxNotifier.value = null;
-      }
-    } else if (widget.isWidgetInspectorHoverEnabled) {
-      final hover = _computeBoxInfoAt(pointerOffset);
-      // Avoid updating hovered box if it's the same as the current box
-      if (hover?.targetRenderBox !=
-          _currentRenderBoxNotifier.value?.targetRenderBox) {
-        _hoveredRenderBoxNotifier.value = hover;
-      } else {
-        _hoveredRenderBoxNotifier.value = null;
-      }
-    }
-  }
-
-  void _onPointerExit(Offset pointerOffset) {
-    _hoveredRenderBoxNotifier.value = null;
-  }
-
-  // Inspector
-
-  void _onInspectorStateChanged(bool isEnabled) {
-    if (!widget.isWidgetInspectorEnabled) {
-      _inspectorStateNotifier.value = false;
-      return;
-    }
-
-    _inspectorStateNotifier.value = isEnabled;
-
-    if (isEnabled) {
-      _onColorPickerStateChanged(false);
-      _onZoomStateChanged(false);
-    } else {
-      _currentRenderBoxNotifier.value = null;
-      _hoveredRenderBoxNotifier.value = null;
-      _comparedRenderBoxNotifier.value = null;
-    }
-  }
-
-  void _onInspectAndCompareChanged(bool isEnabled) {
-    if (!widget.isWidgetInspectorEnabled ||
-        !widget.isWidgetInspectAndCompareEnabled) {
-      _inspectAndCompareStateNotifier.value = false;
-      return;
-    }
-
-    _inspectAndCompareStateNotifier.value = isEnabled;
-
-    if (isEnabled) {
-      _onColorPickerStateChanged(false);
-      _onZoomStateChanged(false);
-    } else {
-      _comparedRenderBoxNotifier.value = null;
-    }
-  }
-
-  // Color picker
-
-  void _onColorPickerStateChanged(bool isEnabled) {
-    if (!widget.isColorPickerEnabled) {
-      _colorPickerStateNotifier.value = false;
-      return;
-    }
-
-    _colorPickerStateNotifier.value = isEnabled;
-
-    if (isEnabled) {
-      _onInspectorStateChanged(false);
-      _onInspectAndCompareChanged(false);
-      _onZoomStateChanged(false);
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _extractByteData();
-      });
-    } else {
-      if (_selectedColorStateNotifier.value != null) {
-        showColorPickerResultSnackbar(
-          context: context,
-          color: _selectedColorStateNotifier.value!,
+    _controller = widget.controller ??
+        InspectorController(
+          isEnabled: _isEnabled,
         );
-      }
 
-      _image?.dispose();
-      _image = null;
-      _byteDataStateNotifier.value = null;
-
-      _selectedColorOffsetNotifier.value = null;
-      _selectedColorStateNotifier.value = null;
-    }
-  }
-
-  // Zoom
-
-  void _onZoomStateChanged(bool isEnabled) {
-    if (!widget.isZoomEnabled) {
-      _zoomStateNotifier.value = false;
-      return;
-    }
-
-    _zoomStateNotifier.value = isEnabled;
-
-    if (isEnabled) {
-      _onInspectorStateChanged(false);
-      _onInspectAndCompareChanged(false);
-      _onColorPickerStateChanged(false);
-      _zoomScaleNotifier.value = 2.0;
-
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await _extractByteData();
-
-        if (_pointerHoverPosition != null) {
-          _onZoomHover(_pointerHoverPosition!);
-        }
-      });
-    } else {
-      _image?.dispose();
-      _image = null;
-      _byteDataStateNotifier.value = null;
-
-      _zoomImageOffsetNotifier.value = null;
-      _zoomOverlayOffsetNotifier.value = null;
-      _zoomScaleNotifier.value = 2.0;
-    }
-  }
-
-  Future<void> _extractByteData() async {
-    if (_image != null) return;
-    final boundary = _repaintBoundaryKey.currentContext!.findRenderObject()!
-        as RenderRepaintBoundary;
-
-    final pixelRatio = MediaQuery.of(context).devicePixelRatio;
-
-    _image = await boundary.toImage(pixelRatio: pixelRatio);
-    _byteDataStateNotifier.value = await _image!.toByteData();
-  }
-
-  Offset _extractShiftedOffset(Offset offset) {
-    final pixelRatio = MediaQuery.of(context).devicePixelRatio;
-
-    var _offset = (_repaintBoundaryKey.currentContext!.findRenderObject()!
-            as RenderRepaintBoundary)
-        .globalToLocal(offset);
-
-    _offset *= pixelRatio;
-
-    return _offset;
-  }
-
-  void _onColorPickerHover(Offset offset) {
-    if (_image == null || _byteDataStateNotifier.value == null) return;
-
-    final shiftedOffset = _extractShiftedOffset(offset);
-    final _x = shiftedOffset.dx.round();
-    final _y = shiftedOffset.dy.round();
-
-    _selectedColorStateNotifier.value = getPixelFromByteData(
-      _byteDataStateNotifier.value!,
-      width: _image!.width,
-      x: _x,
-      y: _y,
-    );
-
-    final overlayOffset =
-        (_stackKey.currentContext!.findRenderObject() as RenderStack)
-            .localToGlobal(Offset.zero);
-
-    _selectedColorOffsetNotifier.value = offset - overlayOffset;
-  }
-
-  void _onZoomHover(Offset offset) {
-    if (_image == null || _byteDataStateNotifier.value == null) return;
-
-    final shiftedOffset = _extractShiftedOffset(offset);
-
-    final overlayOffset =
-        (_stackKey.currentContext!.findRenderObject() as RenderStack)
-            .localToGlobal(Offset.zero);
-
-    _zoomImageOffsetNotifier.value = shiftedOffset;
-    _zoomOverlayOffsetNotifier.value = offset - overlayOffset;
-  }
-
-  void _onPointerScroll(PointerScrollEvent scrollEvent) {
-    if (_zoomStateNotifier.value) {
-      final newValue =
-          _zoomScaleNotifier.value + 1.0 * -scrollEvent.scrollDelta.dy.sign;
-
-      if (newValue < 1.0) {
-        return;
-      }
-
-      _zoomScaleNotifier.value = newValue;
+    if (_isEnabled) {
+      _controller.registerKeyboardHandler();
     }
   }
 
   @override
   void didUpdateWidget(covariant Inspector oldWidget) {
-    if (oldWidget.isEnabled != widget.isEnabled) {
-      if (_isEnabled && widget.areKeyboardShortcutsEnabled) {
-        _keyboardHandler.register();
-      } else {
-        _keyboardHandler.dispose();
+    if (oldWidget.isEnabled != widget.isEnabled ||
+        oldWidget.controller != widget.controller) {
+      if (oldWidget.controller == null && widget.controller != null) {
+        _controller.dispose();
+      }
+
+      if (widget.controller != null) {
+        _controller = widget.controller!;
+        if (_isEnabled) {
+          _controller.registerKeyboardHandler();
+        }
+      } else if (oldWidget.controller != null) {
+        _controller = InspectorController(isEnabled: _isEnabled);
+        if (_isEnabled) {
+          _controller.registerKeyboardHandler();
+        }
       }
     }
 
@@ -485,23 +126,9 @@ class InspectorState extends State<Inspector> {
 
   @override
   void dispose() {
-    _image?.dispose();
-    _byteDataStateNotifier.dispose();
-    _currentRenderBoxNotifier.dispose();
-    _hoveredRenderBoxNotifier.dispose();
-    _comparedRenderBoxNotifier.dispose();
-    _inspectAndCompareStateNotifier.dispose();
-    _inspectorStateNotifier.dispose();
-    _colorPickerStateNotifier.dispose();
-    _zoomStateNotifier.dispose();
-    _selectedColorOffsetNotifier.dispose();
-    _selectedColorStateNotifier.dispose();
-    _zoomImageOffsetNotifier.dispose();
-    _zoomScaleNotifier.dispose();
-    _zoomOverlayOffsetNotifier.dispose();
-    _onPointerHoverDebounce?.cancel();
-
-    _keyboardHandler.dispose();
+    if (widget.controller == null) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
@@ -518,43 +145,40 @@ class InspectorState extends State<Inspector> {
       return widget.child;
     }
 
-    return Stack(
-      key: _stackKey,
+    final content = Stack(
+      key: _controller.stackKey,
       children: [
         Align(
           alignment: widget.alignment,
-          child: MultiValueListenableBuilder(
-            valueListenables: [
-              _colorPickerStateNotifier,
-              _inspectorStateNotifier,
-              _zoomStateNotifier,
-            ],
-            builder: (context) {
+          child: ValueListenableBuilder<InspectorMode>(
+            valueListenable: _controller.modeNotifier,
+            builder: (context, mode, _) {
               Widget _child = widget.child;
 
-              final isIgnoringPointer = _inspectorStateNotifier.value ||
-                  _colorPickerStateNotifier.value ||
-                  _zoomStateNotifier.value;
+              final isIgnoringPointer = mode != InspectorMode.none;
 
               return MouseRegion(
-                onExit: (e) => _onPointerExit(e.position),
+                onExit: (e) => _controller.onPointerExit(e.position),
                 child: Listener(
                   behavior: HitTestBehavior.translucent,
-                  onPointerUp: (e) => _onTap(e.position),
-                  onPointerMove: (e) => _onPointerMove(e.position),
-                  onPointerDown: (e) => _onPointerMove(e.position),
-                  onPointerHover: (e) => _onPointerHoverDebounced(e.position),
+                  onPointerUp: (e) => _controller.onTap(e.position, context),
+                  onPointerMove: (e) =>
+                      _controller.onPointerMove(e.position, context),
+                  onPointerDown: (e) =>
+                      _controller.onPointerMove(e.position, context),
+                  onPointerHover: (e) =>
+                      _controller.onPointerHoverDebounced(e.position, context),
                   onPointerSignal: (event) {
                     if (event is PointerScrollEvent) {
-                      _onPointerScroll(event);
+                      _controller.onPointerScroll(event);
                     }
                   },
                   child: RepaintBoundary(
-                    key: _repaintBoundaryKey,
+                    key: controller.repaintBoundaryKey,
                     child: Stack(
                       children: [
                         KeyedSubtree(
-                          key: _ignoringPointerKey,
+                          key: controller.ignoringPointerKey,
                           child: _child,
                         ),
                         if (isIgnoringPointer)
@@ -569,117 +193,136 @@ class InspectorState extends State<Inspector> {
             },
           ),
         ),
-        if (widget.isColorPickerEnabled)
-          MultiValueListenableBuilder(
-            valueListenables: [
-              _selectedColorOffsetNotifier,
-              _selectedColorStateNotifier,
-            ],
-            builder: (context) {
-              final offset = _selectedColorOffsetNotifier.value;
-              final color = _selectedColorStateNotifier.value;
+        MultiValueListenableBuilder(
+          valueListenables: [
+            _controller.modeNotifier,
+            _controller.selectedColorOffsetNotifier,
+            _controller.selectedColorStateNotifier,
+            _controller.zoomScaleNotifier,
+          ],
+          builder: (context) {
+            final mode = _controller.modeNotifier.value;
+            if (mode != InspectorMode.colorPicker) {
+              return const SizedBox.shrink();
+            }
 
-              if (offset == null || color == null) {
-                return const SizedBox.shrink();
-              }
+            final offset = _controller.selectedColorOffsetNotifier.value;
+            final color = _controller.selectedColorStateNotifier.value;
+            final zoomScale = _controller.zoomScaleNotifier.value;
+            final screenSize = MediaQuery.sizeOf(context);
+            final overlaySize = ui.lerpDouble(
+              _overlayMinSize,
+              _overlayMaxSize,
+              ((zoomScale - 2.0) / 10.0).clamp(0, 1),
+            )!;
 
-              return Positioned(
-                left: offset.dx + 8.0,
-                top: offset.dy - 64.0,
-                child: ColorPickerOverlay(
-                  color: color,
-                  isColorSchemeHintEnabled:
-                      widget.isColorPickerColorSchemeHintEnabled,
+            if (offset == null || color == null) {
+              return const SizedBox.shrink();
+            }
+
+            return Positioned(
+              left: offset.dx.clamp(0, screenSize.width - overlaySize),
+              top: (offset.dy - overlaySize - _overlayOffsetY)
+                  .clamp(0, screenSize.height),
+              child: ZoomableColorPickerOverlay(
+                color: color,
+                isColorSchemeHintEnabled: _controller.isColorSchemeHintEnabled,
+                image: _controller.image!,
+                imageOffset:
+                    _controller.selectedColorImageOffsetNotifier.value ??
+                        Offset.zero,
+                overlaySize: overlaySize,
+                zoomScale: zoomScale,
+                pixelRatio: MediaQuery.devicePixelRatioOf(context),
+              ),
+            );
+          },
+        ),
+        MultiValueListenableBuilder(
+          valueListenables: [
+            _controller.modeNotifier,
+            _controller.currentRenderBoxNotifier,
+            _controller.hoveredRenderBoxNotifier,
+            _controller.comparedRenderBoxNotifier,
+          ],
+          builder: (context) {
+            final mode = _controller.modeNotifier.value;
+            if (mode != InspectorMode.inspector &&
+                mode != InspectorMode.inspectAndCompare) {
+              return const SizedBox.shrink();
+            }
+
+            return LayoutBuilder(
+              builder: (context, constraints) => InspectorOverlay(
+                size: constraints.biggest,
+                boxInfo: _controller.currentRenderBoxNotifier.value,
+                hoveredBoxInfo: _controller.hoveredRenderBoxNotifier.value,
+                comparedBoxInfo: _controller.comparedRenderBoxNotifier.value,
+              ),
+            );
+          },
+        ),
+        MultiValueListenableBuilder(
+          valueListenables: [
+            _controller.modeNotifier,
+            _controller.zoomImageOffsetNotifier,
+            _controller.zoomOverlayOffsetNotifier,
+            _controller.byteDataStateNotifier,
+            _controller.zoomScaleNotifier,
+          ],
+          builder: (context) {
+            final mode = _controller.modeNotifier.value;
+            if (mode != InspectorMode.zoom) return const SizedBox.shrink();
+
+            final offset = _controller.zoomOverlayOffsetNotifier.value;
+            final imageOffset = _controller.zoomImageOffsetNotifier.value;
+            final byteData = _controller.byteDataStateNotifier.value;
+            final zoomScale = _controller.zoomScaleNotifier.value;
+
+            if (offset == null || byteData == null || imageOffset == null) {
+              return const SizedBox.shrink();
+            }
+
+            final overlaySize = ui
+                .lerpDouble(
+                  128.0,
+                  256.0,
+                  ((zoomScale - 2.0) / 10.0).clamp(0, 1),
+                )!
+                .toDouble();
+
+            return Positioned(
+              left: offset.dx - overlaySize / 2,
+              top: offset.dy - overlaySize / 2,
+              child: IgnorePointer(
+                child: ZoomOverlayWidget(
+                  image: _controller.image!,
+                  imageOffset: imageOffset,
+                  overlaySize: overlaySize,
+                  zoomScale: zoomScale,
+                  pixelRatio: MediaQuery.of(context).devicePixelRatio,
                 ),
-              );
-            },
-          ),
-        if (widget.isWidgetInspectorEnabled)
-          MultiValueListenableBuilder(
-            valueListenables: [
-              _currentRenderBoxNotifier,
-              _hoveredRenderBoxNotifier,
-              _comparedRenderBoxNotifier,
-              _inspectorStateNotifier,
-              _zoomStateNotifier,
-            ],
-            builder: (context) => LayoutBuilder(
-              builder: (context, constraints) => _inspectorStateNotifier.value
-                  ? InspectorOverlay(
-                      size: constraints.biggest,
-                      boxInfo: _currentRenderBoxNotifier.value,
-                      hoveredBoxInfo: _hoveredRenderBoxNotifier.value,
-                      comparedBoxInfo: _comparedRenderBoxNotifier.value,
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ),
-        if (widget.isZoomEnabled)
-          MultiValueListenableBuilder(
-            valueListenables: [
-              _zoomImageOffsetNotifier,
-              _zoomOverlayOffsetNotifier,
-              _byteDataStateNotifier,
-              _zoomScaleNotifier,
-            ],
-            builder: (context) {
-              final offset = _zoomOverlayOffsetNotifier.value;
-              final imageOffset = _zoomImageOffsetNotifier.value;
-              final byteData = _byteDataStateNotifier.value;
-              final zoomScale = _zoomScaleNotifier.value;
+              ),
+            );
+          },
+        ),
+      ],
+    );
 
-              if (offset == null || byteData == null || imageOffset == null) {
-                return const SizedBox.shrink();
-              }
+    if (widget.panelBuilder != null) {
+      return widget.panelBuilder!(context, _controller, content);
+    }
 
-              final overlaySize = ui
-                  .lerpDouble(
-                    128.0,
-                    256.0,
-                    ((zoomScale - 2.0) / 10.0).clamp(0, 1),
-                  )!
-                  .toDouble();
-
-              return Positioned(
-                left: offset.dx - overlaySize / 2,
-                top: offset.dy - overlaySize / 2,
-                child: IgnorePointer(
-                  child: ZoomOverlayWidget(
-                    image: _image!,
-                    imageOffset: imageOffset,
-                    overlaySize: overlaySize,
-                    zoomScale: zoomScale,
-                    pixelRatio: MediaQuery.of(context).devicePixelRatio,
-                  ),
-                ),
-              );
-            },
-          ),
+    return Stack(
+      children: [
+        content,
         if (_isPanelVisible)
           Align(
             alignment: Alignment.centerRight,
-            child: MultiValueListenableBuilder(
-              valueListenables: [
-                _inspectorStateNotifier,
-                _inspectAndCompareStateNotifier,
-                _colorPickerStateNotifier,
-                _zoomStateNotifier,
-                _byteDataStateNotifier,
-              ],
-              builder: (context) => InspectorPanel(
-                isInspectorEnabled: _inspectorStateNotifier.value,
-                isInspectAndCompareEnabled:
-                    _inspectAndCompareStateNotifier.value,
-                isColorPickerEnabled: _colorPickerStateNotifier.value,
-                isZoomEnabled: _zoomStateNotifier.value,
-                onInspectorStateChanged: _onInspectorStateChanged,
-                onInspectAndCompareChanged: _onInspectAndCompareChanged,
-                onColorPickerStateChanged: _onColorPickerStateChanged,
-                onZoomStateChanged: _onZoomStateChanged,
-                isColorPickerLoading: _byteDataStateNotifier.value == null &&
-                    _colorPickerStateNotifier.value,
-                isZoomLoading: _byteDataStateNotifier.value == null &&
-                    _zoomStateNotifier.value,
+            child: ValueListenableBuilder<InspectorMode>(
+              valueListenable: _controller.modeNotifier,
+              builder: (context, mode, _) => InspectorPanel(
+                controller: _controller,
               ),
             ),
           ),

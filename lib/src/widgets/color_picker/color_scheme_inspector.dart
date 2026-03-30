@@ -59,7 +59,7 @@ class ColorSchemeInspector {
       String name = entry.key;
       Color schemeColor = entry.value;
 
-      if (color.value == schemeColor.value) {
+      if (color.toARGB32() == schemeColor.toARGB32()) {
         matches.add(name);
       }
     }

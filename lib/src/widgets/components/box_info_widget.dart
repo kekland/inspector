@@ -56,8 +56,8 @@ class BoxInfoWidget extends StatelessWidget {
       child: CustomPaint(
         painter: OverlayPainter(
           boxInfo: boxInfo,
-          targetRectColor: _targetColor.withOpacity(0.35),
-          containerRectColor: _containerColor.withOpacity(0.35),
+          targetRectColor: _targetColor.withValues(alpha: 0.35),
+          containerRectColor: _containerColor.withValues(alpha: 0.35),
           showContainerRenderBox: showContainerRenderBox,
         ),
       ),
