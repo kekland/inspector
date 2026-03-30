@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:inspector/src/keyboard_handler.dart';
+import 'package:inspector/src/widgets/ignore_tap_gesture.dart';
 import 'package:inspector/src/widgets/zoom/zoom_overlay.dart';
 
 import './widgets/panel/inspector_panel.dart';
@@ -122,7 +123,7 @@ class InspectorState extends State<Inspector> {
 
   final _stackKey = GlobalKey();
   final _repaintBoundaryKey = GlobalKey();
-  final _absorbPointerKey = GlobalKey();
+  final _ignoringPointerKey = GlobalKey();
   ui.Image? _image;
 
   final _byteDataStateNotifier = ValueNotifier<ByteData?>(null);
@@ -172,7 +173,7 @@ class InspectorState extends State<Inspector> {
 
   BoxInfo? _computeBoxInfoAt(Offset offset, {bool findContainer = false}) {
     final boxes = InspectorUtils.findRenderObjectsAt(
-        _absorbPointerKey.currentContext!, offset);
+        _ignoringPointerKey.currentContext!, offset);
 
     if (boxes.isEmpty) return null;
 
@@ -531,8 +532,8 @@ class InspectorState extends State<Inspector> {
             builder: (context) {
               Widget _child = widget.child;
 
-              final isAbsorbingPointer = _colorPickerStateNotifier.value ||
-                  _inspectorStateNotifier.value ||
+              final isIgnoringPointer = _inspectorStateNotifier.value ||
+                  _colorPickerStateNotifier.value ||
                   _zoomStateNotifier.value;
 
               return MouseRegion(
@@ -550,10 +551,17 @@ class InspectorState extends State<Inspector> {
                   },
                   child: RepaintBoundary(
                     key: _repaintBoundaryKey,
-                    child: AbsorbPointer(
-                      key: _absorbPointerKey,
-                      absorbing: isAbsorbingPointer,
-                      child: _child,
+                    child: Stack(
+                      children: [
+                        KeyedSubtree(
+                          key: _ignoringPointerKey,
+                          child: _child,
+                        ),
+                        if (isIgnoringPointer)
+                          const Positioned.fill(
+                            child: IgnoreTapGesture(),
+                          ),
+                      ],
                     ),
                   ),
                 ),

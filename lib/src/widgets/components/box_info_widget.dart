@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:inspector/src/widgets/inspector/render_box_extension.dart';
 
 import '../inspector/box_info.dart';
 import 'box_info_panel_widget.dart';
@@ -31,7 +32,7 @@ class BoxInfoWidget extends StatelessWidget {
       child: IgnorePointer(
         child: Align(
           child: InformationBoxWidget.size(
-            size: boxInfo!.targetRect.size,
+            size: boxInfo!.targetRenderBox.displaySize,
             color: _targetColor,
           ),
         ),
