@@ -154,8 +154,7 @@ class BoxInfo {
   }
 }
 
-Rect? getRectFromRenderBox(RenderBox renderBox,
-    {Matrix4? transformationMatrix}) {
+Rect? getRectFromRenderBox(RenderBox renderBox) {
   if (!renderBox.attached) return null;
 
   final topLeft = renderBox.localToGlobal(Offset.zero);
