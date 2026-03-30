@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:inspector/src/widgets/color_picker/utils.dart';
 import 'package:inspector/src/widgets/inspector/box_info.dart';
+import 'package:inspector/src/widgets/inspector/render_box_extension.dart';
 
 class BoxInfoPanelWidget extends StatelessWidget {
   const BoxInfoPanelWidget({
@@ -64,6 +65,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
 
   Widget _buildMainRow(BuildContext context) {
     final theme = Theme.of(context);
+    final displaySize = boxInfo.targetRenderBox.displaySize;
 
     return Wrap(
       spacing: 12.0,
@@ -74,7 +76,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
           icon: Icons.format_shapes,
           subtitle: 'size',
           child: Text(
-            '${boxInfo.targetRect.width.toStringAsFixed(1)} × ${boxInfo.targetRect.height.toStringAsFixed(1)}',
+            '${displaySize.width.toStringAsFixed(1)} × ${displaySize.height.toStringAsFixed(1)}',
           ),
           backgroundColor: theme.chipTheme.backgroundColor,
         ),
@@ -83,7 +85,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
             context,
             icon: Icons.straighten,
             subtitle: 'padding (LTRB)',
-            child: Text(boxInfo.describePadding()),
+            child: Text(boxInfo.describeOriginalPadding()),
             backgroundColor: theme.chipTheme.backgroundColor,
           ),
       ],
@@ -94,6 +96,12 @@ class BoxInfoPanelWidget extends StatelessWidget {
     final theme = Theme.of(context);
     final from = boxInfo.targetRect;
     final to = comparedBoxInfo!.targetRect;
+
+    // Calculate scale factor from the transformation
+    final scaledSize = boxInfo.targetRect.size;
+    final originalSize = boxInfo.targetRenderBox.size;
+    final scale =
+        originalSize.width > 0 ? scaledSize.width / originalSize.width : 1.0;
 
     double left = 0, right = 0, top = 0, bottom = 0;
 
@@ -123,6 +131,12 @@ class BoxInfoPanelWidget extends StatelessWidget {
       bottom = (from.bottom - to.bottom).abs();
     }
 
+    // Convert distances to original (unzoomed) coordinates
+    left /= scale;
+    right /= scale;
+    top /= scale;
+    bottom /= scale;
+
     return Wrap(
       spacing: 12.0,
       runSpacing: 8.0,
@@ -140,32 +154,100 @@ class BoxInfoPanelWidget extends StatelessWidget {
     );
   }
 
+  String _formatBorderRadiusLTRB(BorderRadiusGeometry geometry) {
+    final resolved = geometry.resolve(TextDirection.ltr);
+
+    String f(double v) => v.toStringAsFixed(1);
+
+    return '${f(resolved.topLeft.x)}, ${f(resolved.topRight.x)}, ${f(resolved.bottomRight.x)}, ${f(resolved.bottomLeft.x)}';
+  }
+
+  RenderDecoratedBox? _findSelectedDecoratedBox() {
+    final target = boxInfo.targetRenderBox;
+    return target is RenderDecoratedBox ? target : null;
+  }
+
+  RenderDecoratedBox? _findNearestDecoratedBoxFromHitTestPath() {
+    // When tapping a Container, the selected RenderBox might be a child
+    // (e.g. alignment/padding) instead of the RenderDecoratedBox itself.
+    // Use the hitTestPath to locate the nearest decorated box in the same
+    // subtree under the pointer.
+    for (final box in boxInfo.hitTestPath) {
+      if (box.size != boxInfo.targetRect.size) return null;
+      if (box is RenderDecoratedBox) return box;
+    }
+    return null;
+  }
+
+  RenderDecoratedBox? _findChildDecoratedBoxFromTarget() {
+    final target = boxInfo.targetRenderBox;
+    if (target is RenderProxyBoxMixin) {
+      final child = target.child;
+      if (child != null &&
+          child.size == target.size &&
+          child is RenderDecoratedBox) {
+        return child;
+      }
+    }
+    return null;
+  }
+
+  RenderDecoratedBox? _findDecoratedBoxForDisplay() {
+    // Prefer the selected render object when it is decorated; otherwise, fall
+    // back to the nearest decorated box under the pointer.
+    return _findSelectedDecoratedBox() ??
+        _findNearestDecoratedBoxFromHitTestPath() ??
+        _findChildDecoratedBoxFromTarget();
+  }
+
+  bool _hasSelectedDecoratedInfo() {
+    // Selection-first policy: never show decoration info when the selected box
+    // is a RenderParagraph (text selection should focus on text).
+    if (boxInfo.targetRenderBox is RenderParagraph) return false;
+
+    final decorated = _findDecoratedBoxForDisplay();
+    if (decorated == null) return false;
+
+    final d = decorated.decoration;
+    if (d is! BoxDecoration) return false;
+
+    return d.color != null ||
+        d.borderRadius != null ||
+        d.shape != BoxShape.rectangle ||
+        d.border != null ||
+        d.boxShadow != null ||
+        d.gradient != null;
+  }
+
   Widget _buildRenderDecoratedBoxInfo(BuildContext context) {
     final theme = Theme.of(context);
-    final _renderDecoratedBox = boxInfo.targetRenderBox as RenderDecoratedBox;
 
-    final decoration = _renderDecoratedBox.decoration;
+    final renderDecoratedBox = _findDecoratedBoxForDisplay();
+    if (renderDecoratedBox == null) return const SizedBox.shrink();
 
+    final decoration = renderDecoratedBox.decoration;
     if (decoration is! BoxDecoration) return const SizedBox.shrink();
 
     return Wrap(
       spacing: 12.0,
       runSpacing: 8.0,
       children: [
-        _buildInfoRow(
-          context,
-          icon: Icons.rounded_corner,
-          subtitle: 'border radius',
-          backgroundColor: theme.chipTheme.backgroundColor,
-          child: Text(decoration.borderRadius.toString()),
-        ),
-        _buildInfoRow(
-          context,
-          icon: Icons.circle_outlined,
-          subtitle: 'shape',
-          backgroundColor: theme.chipTheme.backgroundColor,
-          child: Text(decoration.shape.toString()),
-        ),
+        if (decoration.borderRadius != null)
+          _buildInfoRow(
+            context,
+            icon: Icons.rounded_corner,
+            subtitle: 'border radius (LTRB)',
+            backgroundColor: theme.chipTheme.backgroundColor,
+            child: Text(_formatBorderRadiusLTRB(decoration.borderRadius!)),
+          ),
+        if (decoration.shape != BoxShape.rectangle)
+          _buildInfoRow(
+            context,
+            icon: Icons.circle_outlined,
+            subtitle: 'shape',
+            backgroundColor: theme.chipTheme.backgroundColor,
+            child: Text(decoration.shape.toString()),
+          ),
         _buildInfoRow(
           context,
           icon: Icons.palette,
@@ -202,9 +284,11 @@ class BoxInfoPanelWidget extends StatelessWidget {
 
   Widget _buildRenderParagraphInfo(BuildContext context) {
     final theme = Theme.of(context);
-    final _renderParagraph = boxInfo.targetRenderBox as RenderParagraph;
 
-    final styles = _extractTextStyles(_renderParagraph.text);
+    final target = boxInfo.targetRenderBox;
+    if (target is! RenderParagraph) return const SizedBox.shrink();
+
+    final styles = _extractTextStyles(target.text);
 
     if (styles.isEmpty) return const SizedBox.shrink();
 
@@ -281,6 +365,11 @@ class BoxInfoPanelWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final target = boxInfo.targetRenderBox;
+    final isSelectedParagraph = target is RenderParagraph;
+    final hasSelectedDecoration =
+        !isSelectedParagraph && _hasSelectedDecoratedInfo();
+
     return Card(
       child: SizedBox(
         width: double.infinity,
@@ -316,8 +405,6 @@ class BoxInfoPanelWidget extends StatelessWidget {
             expandedAlignment: Alignment.centerLeft,
             expandedCrossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // const SizedBox(height: 4.0),
-              // _buildSizeRow(context),
               _buildMainRow(context),
               if (boxInfo.targetRenderBox.attached == true &&
                   comparedBoxInfo?.targetRenderBox.attached == true) ...[
@@ -327,14 +414,13 @@ class BoxInfoPanelWidget extends StatelessWidget {
                 ),
                 _buildComparedRow(context),
               ],
-              if (boxInfo.targetRenderBox is RenderParagraph) ...[
+              if (isSelectedParagraph) ...[
                 Divider(
                   height: 16.0,
                   color: theme.dividerColor,
                 ),
                 _buildRenderParagraphInfo(context),
-              ],
-              if (boxInfo.targetRenderBox is RenderDecoratedBox) ...[
+              ] else if (hasSelectedDecoration) ...[
                 Divider(
                   height: 16.0,
                   color: theme.dividerColor,

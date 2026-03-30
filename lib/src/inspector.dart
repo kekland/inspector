@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:inspector/src/inspector_controller.dart';
+import 'package:inspector/src/widgets/ignore_tap_gesture.dart';
 import 'package:inspector/src/widgets/zoom/zoom_overlay.dart';
 import 'package:inspector/src/widgets/zoomable_color_picker/zoomable_color_picker.dart';
 
@@ -154,7 +155,7 @@ class InspectorState extends State<Inspector> {
             builder: (context, mode, _) {
               Widget _child = widget.child;
 
-              final isAbsorbingPointer = mode != InspectorMode.none;
+              final isIgnoringPointer = mode != InspectorMode.none;
 
               return MouseRegion(
                 onExit: (e) => _controller.onPointerExit(e.position),
@@ -173,11 +174,18 @@ class InspectorState extends State<Inspector> {
                     }
                   },
                   child: RepaintBoundary(
-                    key: _controller.repaintBoundaryKey,
-                    child: AbsorbPointer(
-                      key: _controller.absorbPointerKey,
-                      absorbing: isAbsorbingPointer,
-                      child: _child,
+                    key: controller.repaintBoundaryKey,
+                    child: Stack(
+                      children: [
+                        KeyedSubtree(
+                          key: controller.ignoringPointerKey,
+                          child: _child,
+                        ),
+                        if (isIgnoringPointer)
+                          const Positioned.fill(
+                            child: IgnoreTapGesture(),
+                          ),
+                      ],
                     ),
                   ),
                 ),

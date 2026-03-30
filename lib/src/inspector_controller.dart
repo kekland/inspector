@@ -77,7 +77,7 @@ class InspectorController {
 
   final GlobalKey stackKey = GlobalKey();
   final GlobalKey repaintBoundaryKey = GlobalKey();
-  final GlobalKey absorbPointerKey = GlobalKey();
+  final GlobalKey ignoringPointerKey = GlobalKey();
 
   final modeNotifier = ValueNotifier<InspectorMode>(InspectorMode.none);
 
@@ -345,10 +345,10 @@ class InspectorController {
   }
 
   BoxInfo? _computeBoxInfoAt(Offset offset, {bool findContainer = false}) {
-    if (absorbPointerKey.currentContext == null) return null;
+    if (ignoringPointerKey.currentContext == null) return null;
 
     final boxes = InspectorUtils.findRenderObjectsAt(
-        absorbPointerKey.currentContext!, offset);
+        ignoringPointerKey.currentContext!, offset);
 
     if (boxes.isEmpty) return null;
 
