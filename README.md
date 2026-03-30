@@ -28,7 +28,7 @@ Warning, the development of this package is still in progress and some things ma
 - [x] Padding inspection
 - [x] Keyboard shortcuts
 - [x] Zooming 
-- [ ] `BorderRadius` inspection
+- [x] `BorderRadius` inspection
 - [x] `TextStyle` inspection 
 
 <br clear="right"/>
@@ -67,6 +67,10 @@ It's quite straightforward to use, just tap on the widget that you want to measu
 or tap on the pixel to get its color.
 
 You can also use keyboard shortcuts - `Shift` will toggle the color picker, `Z` will toggle the zoom, and `Alt` or `Cmd` will toggle the widget inspector.
+
+## Custom inspectors
+
+You can check out the example at `custom_inspector_example.dart` to see how to build your own custom inspector UI by using the `InspectorController`.
 
 ## Examples
 
