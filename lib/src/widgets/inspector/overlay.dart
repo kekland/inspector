@@ -11,12 +11,16 @@ class InspectorOverlay extends StatefulWidget {
     required this.boxInfo,
     this.hoveredBoxInfo,
     this.comparedBoxInfo,
+    this.onCompare,
+    this.isCompareActive = false,
   }) : super(key: key);
 
   final Size size;
   final BoxInfo? boxInfo;
   final BoxInfo? hoveredBoxInfo;
   final BoxInfo? comparedBoxInfo;
+  final VoidCallback? onCompare;
+  final bool isCompareActive;
 
   @override
   State<InspectorOverlay> createState() => _InspectorOverlayState();
@@ -94,6 +98,8 @@ class _InspectorOverlayState extends State<InspectorOverlay>
         boxInfo: widget.boxInfo,
         hoveredBoxInfo: widget.hoveredBoxInfo,
         comparedBoxInfo: widget.comparedBoxInfo,
+        onCompare: widget.onCompare,
+        isCompareActive: widget.isCompareActive,
       ),
     );
   }

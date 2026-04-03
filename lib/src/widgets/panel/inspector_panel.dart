@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:inspector/src/inspector_controller.dart';
-import 'package:inspector/src/widgets/inspector/box_info.dart';
 
 class InspectorPanel extends StatefulWidget {
   const InspectorPanel({
@@ -32,7 +31,7 @@ class _InspectorPanelState extends State<InspectorPanel> {
       case InspectorMode.inspectAndCompare:
         return Icons.format_shapes;
       case InspectorMode.compareSelect:
-        return Icons.compare;
+        return Icons.format_shapes;
       case InspectorMode.colorPicker:
         return Icons.colorize;
       case InspectorMode.zoom:
@@ -68,10 +67,6 @@ class _InspectorPanelState extends State<InspectorPanel> {
 
     final _height = 16.0 +
         (controller.isWidgetInspectorEnabled ? 56.0 : 0.0) +
-        (controller.isWidgetInspectorEnabled &&
-                controller.isWidgetInspectAndCompareEnabled
-            ? 64.0
-            : 0.0) +
         (controller.isColorPickerEnabled ? 64.0 : 0.0) +
         (controller.isZoomEnabled ? 64.0 : 0.0);
 
@@ -93,43 +88,21 @@ class _InspectorPanelState extends State<InspectorPanel> {
             if (controller.isWidgetInspectorEnabled)
               FloatingActionButton(
                 onPressed: () => controller.setMode(
-                  mode == InspectorMode.inspector
+                  (mode == InspectorMode.inspector ||
+                          mode == InspectorMode.compareSelect)
                       ? InspectorMode.none
                       : InspectorMode.inspector,
                 ),
-                backgroundColor: mode == InspectorMode.inspector
+                backgroundColor: (mode == InspectorMode.inspector ||
+                        mode == InspectorMode.compareSelect)
                     ? Colors.blue
                     : Colors.white,
-                foregroundColor: mode == InspectorMode.inspector
+                foregroundColor: (mode == InspectorMode.inspector ||
+                        mode == InspectorMode.compareSelect)
                     ? Colors.white
                     : Colors.black54,
                 child: const Icon(Icons.format_shapes),
               ),
-            if (controller.isWidgetInspectorEnabled &&
-                controller.isWidgetInspectAndCompareEnabled) ...[
-              const SizedBox(height: 8.0),
-              ValueListenableBuilder<BoxInfo?>(
-                valueListenable: controller.currentRenderBoxNotifier,
-                builder: (context, currentBox, _) {
-                  final isActive = mode == InspectorMode.compareSelect;
-                  final isEnabled = isActive || currentBox != null;
-                  return FloatingActionButton(
-                    onPressed: isEnabled
-                        ? () {
-                            if (isActive) {
-                              controller.exitCompareMode();
-                            } else {
-                              controller.enterCompareMode();
-                            }
-                          }
-                        : null,
-                    backgroundColor: isActive ? Colors.blue : Colors.white,
-                    foregroundColor: isActive ? Colors.white : Colors.black54,
-                    child: const Icon(Icons.compare),
-                  );
-                },
-              ),
-            ],
             if (controller.isColorPickerEnabled) ...[
               const SizedBox(height: 8.0),
               FloatingActionButton(

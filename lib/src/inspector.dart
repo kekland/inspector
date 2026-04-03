@@ -253,12 +253,21 @@ class InspectorState extends State<Inspector> {
               return const SizedBox.shrink();
             }
 
+            final isCompareActive = mode == InspectorMode.compareSelect;
+            final onCompare = _controller.isWidgetInspectAndCompareEnabled
+                ? (isCompareActive
+                    ? _controller.exitCompareMode
+                    : _controller.enterCompareMode)
+                : null;
+
             return LayoutBuilder(
               builder: (context, constraints) => InspectorOverlay(
                 size: constraints.biggest,
                 boxInfo: _controller.currentRenderBoxNotifier.value,
                 hoveredBoxInfo: _controller.hoveredRenderBoxNotifier.value,
                 comparedBoxInfo: _controller.comparedRenderBoxNotifier.value,
+                onCompare: onCompare,
+                isCompareActive: isCompareActive,
               ),
             );
           },

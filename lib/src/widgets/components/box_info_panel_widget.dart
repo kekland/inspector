@@ -11,10 +11,14 @@ class BoxInfoPanelWidget extends StatelessWidget {
     Key? key,
     required this.boxInfo,
     this.comparedBoxInfo,
+    this.onCompare,
+    this.isCompareActive = false,
   }) : super(key: key);
 
   final BoxInfo boxInfo;
   final BoxInfo? comparedBoxInfo;
+  final VoidCallback? onCompare;
+  final bool isCompareActive;
 
   Widget _buildInfoRow(
     BuildContext context, {
@@ -385,8 +389,17 @@ class BoxInfoPanelWidget extends StatelessWidget {
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
-                TextButton(
-                  child: const Text('Copy'),
+                if (onCompare != null)
+                  IconButton(
+                    iconSize: 18.0,
+                    color: isCompareActive
+                        ? theme.colorScheme.primary
+                        : theme.iconTheme.color,
+                    onPressed: onCompare,
+                    icon: const Icon(Icons.compare),
+                  ),
+                IconButton(
+                  iconSize: 18.0,
                   onPressed: () {
                     Clipboard.setData(
                       ClipboardData(
@@ -394,6 +407,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
                       ),
                     );
                   },
+                  icon: const Icon(Icons.copy),
                 ),
               ],
             ),

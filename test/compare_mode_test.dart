@@ -50,44 +50,24 @@ Future<void> _enterInspectorAndSelectA(WidgetTester tester) async {
 }
 
 void main() {
-  group('Compare button', () {
-    testWidgets('shows in panel', (tester) async {
+  group('Compare button in widget info panel', () {
+    testWidgets('shows after selecting a widget', (tester) async {
       // Given
       await tester.pumpWidget(_buildBody());
+      await _enterInspectorAndSelectA(tester);
 
       // Then
       expect(find.byIcon(Icons.compare), findsOneWidget);
     });
 
-    testWidgets('is disabled when no widget is selected', (tester) async {
-      // Given
+    testWidgets('does not show without a selected widget', (tester) async {
+      // Given — inspector on but no widget tapped
       await tester.pumpWidget(_buildBody());
+      await tester.tap(find.byIcon(Icons.format_shapes));
+      await tester.pump();
 
-      // When — inspector is off, no widget selected
-      final finder = find.ancestor(
-        of: find.byIcon(Icons.compare),
-        matching: find.byType(FloatingActionButton),
-      );
-
-      // Then
-      final button = tester.widget<FloatingActionButton>(finder);
-      expect(button.onPressed, isNull);
-    });
-
-    testWidgets('is enabled after widget is selected', (tester) async {
-      // Given
-      await tester.pumpWidget(_buildBody());
-      await _enterInspectorAndSelectA(tester);
-
-      // When
-      final finder = find.ancestor(
-        of: find.byIcon(Icons.compare),
-        matching: find.byType(FloatingActionButton),
-      );
-
-      // Then
-      final button = tester.widget<FloatingActionButton>(finder);
-      expect(button.onPressed, isNotNull);
+      // Then — info panel not visible, no Compare button
+      expect(find.byIcon(Icons.compare), findsNothing);
     });
 
     testWidgets('enters compareSelect mode on tap', (tester) async {
@@ -102,16 +82,10 @@ void main() {
       // Then
       final controller = _getController(tester);
       expect(controller.modeNotifier.value, InspectorMode.compareSelect);
-
-      final finder = find.ancestor(
-        of: find.byIcon(Icons.compare),
-        matching: find.byType(FloatingActionButton),
-      );
-      final button = tester.widget<FloatingActionButton>(finder);
-      expect(button.backgroundColor, Colors.blue);
+      expect(find.byIcon(Icons.compare), findsOneWidget);
     });
 
-    testWidgets('exits compareSelect on second tap (cancel)', (tester) async {
+    testWidgets('exits compareSelect on Cancel tap', (tester) async {
       // Given
       await tester.pumpWidget(_buildBody());
       await _enterInspectorAndSelectA(tester);
@@ -126,13 +100,7 @@ void main() {
       final controller = _getController(tester);
       expect(controller.modeNotifier.value, InspectorMode.inspector);
       expect(controller.comparedRenderBoxNotifier.value, isNull);
-
-      final finder = find.ancestor(
-        of: find.byIcon(Icons.compare),
-        matching: find.byType(FloatingActionButton),
-      );
-      final button = tester.widget<FloatingActionButton>(finder);
-      expect(button.backgroundColor, Colors.white);
+      expect(find.byIcon(Icons.compare), findsOneWidget);
     });
   });
 

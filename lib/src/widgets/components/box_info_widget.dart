@@ -12,11 +12,15 @@ class BoxInfoWidget extends StatelessWidget {
     this.boxInfo,
     this.hoveredBoxInfo,
     this.comparedBoxInfo,
+    this.onCompare,
+    this.isCompareActive = false,
   }) : super(key: key);
 
   final BoxInfo? boxInfo;
   final BoxInfo? hoveredBoxInfo;
   final BoxInfo? comparedBoxInfo;
+  final VoidCallback? onCompare;
+  final bool isCompareActive;
 
   Color get _targetColor => Colors.blue.shade700;
 
@@ -44,6 +48,8 @@ class BoxInfoWidget extends StatelessWidget {
     return BoxInfoPanelWidget(
       boxInfo: boxInfo!,
       comparedBoxInfo: comparedBoxInfo,
+      onCompare: onCompare,
+      isCompareActive: isCompareActive,
     );
   }
 
