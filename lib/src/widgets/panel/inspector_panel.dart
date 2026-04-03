@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:inspector/src/inspector_controller.dart';
+import 'package:inspector/src/widgets/inspector/box_info.dart';
 
 class InspectorPanel extends StatefulWidget {
   const InspectorPanel({
@@ -107,21 +108,26 @@ class _InspectorPanelState extends State<InspectorPanel> {
             if (controller.isWidgetInspectorEnabled &&
                 controller.isWidgetInspectAndCompareEnabled) ...[
               const SizedBox(height: 8.0),
-              FloatingActionButton(
-                onPressed: () {
-                  if (mode == InspectorMode.compareSelect) {
-                    controller.exitCompareMode();
-                  } else {
-                    controller.enterCompareMode();
-                  }
+              ValueListenableBuilder<BoxInfo?>(
+                valueListenable: controller.currentRenderBoxNotifier,
+                builder: (context, currentBox, _) {
+                  final isActive = mode == InspectorMode.compareSelect;
+                  final isEnabled = isActive || currentBox != null;
+                  return FloatingActionButton(
+                    onPressed: isEnabled
+                        ? () {
+                            if (isActive) {
+                              controller.exitCompareMode();
+                            } else {
+                              controller.enterCompareMode();
+                            }
+                          }
+                        : null,
+                    backgroundColor: isActive ? Colors.blue : Colors.white,
+                    foregroundColor: isActive ? Colors.white : Colors.black54,
+                    child: const Icon(Icons.compare),
+                  );
                 },
-                backgroundColor: mode == InspectorMode.compareSelect
-                    ? Colors.blue
-                    : Colors.white,
-                foregroundColor: mode == InspectorMode.compareSelect
-                    ? Colors.white
-                    : Colors.black54,
-                child: const Icon(Icons.compare),
               ),
             ],
             if (controller.isColorPickerEnabled) ...[

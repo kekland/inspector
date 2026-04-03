@@ -149,15 +149,12 @@ class InspectorController {
   /// Enter compare mode: wait for the user to tap a second widget.
   void enterCompareMode() {
     if (currentRenderBoxNotifier.value == null) return;
-    if (!isWidgetInspectorEnabled || !isWidgetInspectAndCompareEnabled) return;
-    modeNotifier.value = InspectorMode.compareSelect;
-    comparedRenderBoxNotifier.value = null;
+    setMode(InspectorMode.compareSelect);
   }
 
   /// Exit compare mode and reset compare state.
   void exitCompareMode() {
-    modeNotifier.value = InspectorMode.inspector;
-    comparedRenderBoxNotifier.value = null;
+    setMode(InspectorMode.inspector);
   }
 
   void setMode(InspectorMode mode, {BuildContext? context}) {
@@ -285,12 +282,12 @@ class InspectorController {
     if (mode == InspectorMode.compareSelect) {
       if (pointerOffset == null) return;
       final compared = _computeBoxInfoAt(pointerOffset);
+      setMode(InspectorMode.inspector);
       if (compared != null &&
           compared.targetRenderBox !=
               currentRenderBoxNotifier.value?.targetRenderBox) {
         comparedRenderBoxNotifier.value = compared;
       }
-      modeNotifier.value = InspectorMode.inspector;
       return;
     }
 
