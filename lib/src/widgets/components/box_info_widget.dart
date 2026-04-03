@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:inspector/src/widgets/inspector/render_box_extension.dart';
 
 import '../inspector/box_info.dart';
+import '../inspector/compare_overlay_painter.dart';
 import 'box_info_panel_widget.dart';
 import 'information_box_widget.dart';
 import 'overlay_painter.dart';
@@ -82,6 +83,17 @@ class BoxInfoWidget extends StatelessWidget {
         if (comparedBoxInfo?.targetRenderBox.attached == true)
           _buildBoxOverlay(context, comparedBoxInfo!,
               showContainerRenderBox: false),
+        if (boxInfo?.targetRenderBox.attached == true &&
+            comparedBoxInfo?.targetRenderBox.attached == true)
+          IgnorePointer(
+            child: CustomPaint(
+              painter: CompareOverlayPainter(
+                boxInfoA: boxInfo!,
+                boxInfoB: comparedBoxInfo!,
+                lineColor: Colors.green.shade700,
+              ),
+            ),
+          ),
         // ..._buildPaddingWidgets(context),
         if (boxInfo?.targetRenderBox.attached == true) ...[
           _buildTargetBoxSizeWidget(context),

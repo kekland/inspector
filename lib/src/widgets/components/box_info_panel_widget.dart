@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:inspector/src/widgets/color_picker/utils.dart';
 import 'package:inspector/src/widgets/inspector/box_info.dart';
+import 'package:inspector/src/widgets/inspector/compare_distances.dart';
 import 'package:inspector/src/widgets/inspector/render_box_extension.dart';
 
 class BoxInfoPanelWidget extends StatelessWidget {
@@ -97,63 +98,32 @@ class BoxInfoPanelWidget extends StatelessWidget {
   }
 
   Widget _buildComparedRow(BuildContext context) {
-    final theme = Theme.of(context);
-    final from = boxInfo.targetRect;
-    final to = comparedBoxInfo!.targetRect;
-
-    // Calculate scale factor from the transformation
-    final scaledSize = boxInfo.targetRect.size;
-    final originalSize = boxInfo.targetRenderBox.size;
+    final originalWidth = boxInfo.targetRenderBox.size.width;
     final scale =
-        originalSize.width > 0 ? scaledSize.width / originalSize.width : 1.0;
+        originalWidth > 0 ? boxInfo.targetRect.width / originalWidth : 1.0;
 
-    double left = 0, right = 0, top = 0, bottom = 0;
+    final distances = computeCompareDistances(
+      boxInfo.targetRect,
+      comparedBoxInfo!.targetRect,
+      scale: scale,
+    );
 
-    // Horizontal distances
-    if (from.right <= to.left) {
-      // from is left of to
-      right = to.left - from.right;
-    } else if (to.right <= from.left) {
-      // from is right of to
-      left = from.left - to.right;
-    } else {
-      // They overlap horizontally
-      left = (from.left - to.left).abs();
-      right = (from.right - to.right).abs();
-    }
+    if (distances.isEmpty) return const SizedBox.shrink();
 
-    // Vertical distances
-    if (from.bottom <= to.top) {
-      // from is above to
-      bottom = to.top - from.bottom;
-    } else if (to.bottom <= from.top) {
-      // from is below to
-      top = from.top - to.bottom;
-    } else {
-      // They overlap vertically
-      top = (from.top - to.top).abs();
-      bottom = (from.bottom - to.bottom).abs();
-    }
-
-    // Convert distances to original (unzoomed) coordinates
-    left /= scale;
-    right /= scale;
-    top /= scale;
-    bottom /= scale;
+    final theme = Theme.of(context);
 
     return Wrap(
       spacing: 12.0,
       runSpacing: 8.0,
       children: [
-        _buildInfoRow(
-          context,
-          icon: Icons.open_with,
-          subtitle: 'Distances (LTRB)',
-          child: Text(
-            '${left.toStringAsFixed(1)}, ${top.toStringAsFixed(1)}, ${right.toStringAsFixed(1)}, ${bottom.toStringAsFixed(1)}',
+        for (final d in distances)
+          _buildInfoRow(
+            context,
+            icon: d.icon,
+            subtitle: 'distance',
+            backgroundColor: theme.chipTheme.backgroundColor,
+            child: Text(d.value.toStringAsFixed(1)),
           ),
-          backgroundColor: theme.chipTheme.backgroundColor,
-        ),
       ],
     );
   }

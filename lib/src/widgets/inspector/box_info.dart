@@ -143,7 +143,7 @@ class BoxInfo {
     final _right = padding.right.toStringAsFixed(1);
     final _bottom = padding.bottom.toStringAsFixed(1);
 
-    return '$_left, $_top, $_right, $_bottom';
+    return 'L:$_left  T:$_top  R:$_right  B:$_bottom';
   }
 
   bool get isDecoratedBox =>
