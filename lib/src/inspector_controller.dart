@@ -100,6 +100,7 @@ class InspectorController {
   Offset? _pointerHoverPosition;
   Timer? _onPointerHoverDebounce;
   late final KeyboardHandler _keyboardHandler;
+  bool _disposed = false;
 
   void registerKeyboardHandler() {
     _keyboardHandler.register();
@@ -110,6 +111,7 @@ class InspectorController {
   }
 
   void dispose() {
+    _disposed = true;
     _image?.dispose();
     modeNotifier.dispose();
     byteDataStateNotifier.dispose();
@@ -375,8 +377,19 @@ class InspectorController {
     final context = repaintBoundaryKey.currentContext!;
     final pixelRatio = MediaQuery.of(context).devicePixelRatio;
 
-    _image = await boundary.toImage(pixelRatio: pixelRatio);
-    byteDataStateNotifier.value = await _image!.toByteData();
+    final image = await boundary.toImage(pixelRatio: pixelRatio);
+
+    if (_disposed) {
+      image.dispose();
+      return;
+    }
+
+    _image = image;
+    final byteData = await _image!.toByteData();
+
+    if (_disposed) return;
+
+    byteDataStateNotifier.value = byteData;
   }
 
   Offset _extractShiftedOffset(Offset offset, BuildContext context) {
