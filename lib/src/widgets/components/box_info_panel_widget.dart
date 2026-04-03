@@ -303,6 +303,20 @@ class BoxInfoPanelWidget extends StatelessWidget {
           ),
       ];
 
+  List<_PropSpec> _stackProps(RenderStack target) => [
+        (
+          icon: Icons.align_vertical_bottom,
+          subtitle: 'alignment',
+          child: Text(target.alignment.toString()),
+        ),
+        if (target.fit != StackFit.loose)
+          (
+            icon: Icons.fit_screen,
+            subtitle: 'fit',
+            child: Text(target.fit.name),
+          ),
+      ];
+
   List<_PropSpec> _flexProps(RenderFlex target) => [
         (
           icon: Icons.swap_horiz,
@@ -567,6 +581,9 @@ class BoxInfoPanelWidget extends StatelessWidget {
   Widget? _buildTypeSection(BuildContext context, RenderBox target) {
     if (target is RenderParagraph) {
       return _buildParagraphSection(context, target);
+    }
+    if (target is RenderStack) {
+      return _buildSection(context, _stackProps(target));
     }
     if (target is RenderFlex) {
       return _buildSection(context, _flexProps(target));
