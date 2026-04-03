@@ -211,7 +211,7 @@ void main() {
 
       expect(find.textContaining('RenderDecoratedBox'), findsOneWidget);
       expect(find.text('100.0 × 100.0'), findsWidgets);
-      expect(find.text('50.0, 150.0, 50.0, 150.0'), findsOneWidget);
+      expect(find.text('L:50.0  T:150.0  R:50.0  B:150.0'), findsOneWidget);
     });
 
     // testWidgets('hit-test result golden test', (tester) async {
