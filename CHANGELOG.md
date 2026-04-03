@@ -1,3 +1,13 @@
+## 4.1.0
+
+* Added tap-to-compare mode - select a widget, tap Compare (or press `Y`) to lock a second widget for side-by-side inspection. Works on mobile. Thanks @yelmuratoff!
+
+## 4.0.0
+
+* Major codebase improvements and better inspector handling for certain box types (e.g. FittedBox). Also supports inspecting inside of widgets like InteractiveViewer. Thanks @EArminjon!
+* Exposed BorderRadius properties for better inspection of DecoratedBox widgets. Thanks @alpinnz!
+* Major refactor - the codebase is now split into `InspectorController` and `Inspector`. This means that you can now build your own custom inspector UI by using the `InspectorController`, instead of being tied down to the default one. You can check out the example at `custom_inspector_example.dart`. Thanks @yelmuratoff!
+
 ## 3.1.0
 
 * Added "compare" functionality - if a box is selected, you can now hold `Y` and hover another box to see the difference in the boxes' position. Thanks @EArminjon!
