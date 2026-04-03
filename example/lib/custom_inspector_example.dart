@@ -7,7 +7,7 @@ void main() {
 }
 
 class CustomInspectorExample extends StatelessWidget {
-  const CustomInspectorExample({Key? key}) : super(key: key);
+  const CustomInspectorExample({super.key});
 
   @override
   Widget build(BuildContext context) {
