@@ -168,6 +168,66 @@ class BoxInfo {
     assert(isDecoratedBox);
     return _decoration.borderRadius;
   }
+
+  /// The nearest [RenderDecoratedBox] with [BoxDecoration] relevant to the
+  /// selected target. Checks the target directly, then the hit-test path,
+  /// then the target's direct child — in that priority order.
+  RenderDecoratedBox? get decoratedBoxForDisplay =>
+      _findSelectedDecoratedBox() ??
+      _findNearestDecoratedBoxFromHitTestPath() ??
+      _findChildDecoratedBoxFromTarget();
+
+  RenderDecoratedBox? _findSelectedDecoratedBox() =>
+      targetRenderBox is RenderDecoratedBox
+          ? targetRenderBox as RenderDecoratedBox
+          : null;
+
+  RenderDecoratedBox? _findNearestDecoratedBoxFromHitTestPath() {
+    for (final box in hitTestPath) {
+      if (box.size != targetRect.size) return null;
+      if (box is RenderDecoratedBox) return box;
+    }
+    return null;
+  }
+
+  RenderDecoratedBox? _findChildDecoratedBoxFromTarget() {
+    if (targetRenderBox is RenderProxyBoxMixin) {
+      final child = (targetRenderBox as RenderProxyBoxMixin).child;
+      if (child != null &&
+          child.size == targetRenderBox.size &&
+          child is RenderDecoratedBox) {
+        return child;
+      }
+    }
+    return null;
+  }
+
+  /// The fill color of a [ColoredBox] that is or wraps the target, if any.
+  ///
+  /// [_RenderColoredBox] is a private Flutter class — dynamic dispatch is used
+  /// because there is no public type to cast to.
+  Color? get coloredBoxColor =>
+      _tryColoredBoxColor(targetRenderBox) ??
+      (targetRenderBox is RenderProxyBoxMixin
+          ? _tryColoredBoxColorFromProxy(targetRenderBox as RenderProxyBoxMixin)
+          : null);
+
+  Color? _tryColoredBoxColorFromProxy(RenderProxyBoxMixin proxy) {
+    final child = proxy.child;
+    if (child is RenderBox && child.size == targetRenderBox.size) {
+      return _tryColoredBoxColor(child);
+    }
+    return null;
+  }
+
+  Color? _tryColoredBoxColor(RenderBox box) {
+    if (!box.runtimeType.toString().contains('ColoredBox')) return null;
+    try {
+      return (box as dynamic).color as Color;
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 Rect? getRectFromRenderBox(RenderBox renderBox) {

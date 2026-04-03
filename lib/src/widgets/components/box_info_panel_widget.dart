@@ -8,9 +8,72 @@ import 'package:inspector/src/widgets/inspector/compare_distances.dart';
 import 'package:inspector/src/widgets/inspector/render_box_extension.dart';
 
 /// Declarative spec for a single info chip.
-/// [child] is the value widget — use [Text] for plain values,
-/// [_colorSwatch] for colors.
 typedef _PropSpec = ({IconData icon, String subtitle, Widget child});
+
+List<TextStyle> _extractTextStyles(InlineSpan span, [List<TextStyle>? styles]) {
+  styles ??= [];
+  if (span.style != null) styles.add(span.style!);
+  if (span is TextSpan && span.children != null) {
+    for (final child in span.children!) {
+      _extractTextStyles(child, styles);
+    }
+  }
+  return styles;
+}
+
+// ─── Private widget classes ───────────────────────────────────────────────────
+
+class _ColorDot extends StatelessWidget {
+  const _ColorDot(this.color);
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 12,
+        height: 12,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(2),
+          border: Border.all(
+            color: Colors.black.withValues(alpha: 0.15),
+            width: 0.5,
+          ),
+        ),
+      );
+}
+
+class _ColorSwatch extends StatelessWidget {
+  const _ColorSwatch(this.color);
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final hex = '#${colorToHexString(color, withAlpha: true)}';
+    return GestureDetector(
+      onTap: () {
+        Clipboard.setData(ClipboardData(text: hex));
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              spacing: 8,
+              children: [_ColorDot(color), Text('Copied $hex')],
+            ),
+          ),
+        );
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 4.0,
+        children: [_ColorDot(color), Text(hex)],
+      ),
+    );
+  }
+}
+
+// ─── Main widget ──────────────────────────────────────────────────────────────
 
 class BoxInfoPanelWidget extends StatelessWidget {
   const BoxInfoPanelWidget({
@@ -47,7 +110,6 @@ class BoxInfoPanelWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             child,
-            const SizedBox(height: 0.0),
             Text(
               subtitle,
               style: theme.textTheme.bodySmall?.copyWith(fontSize: 10.0),
@@ -69,8 +131,6 @@ class BoxInfoPanelWidget extends StatelessWidget {
     return content;
   }
 
-  /// Renders a [Wrap] of chips from a declarative [props] list.
-  /// Returns [SizedBox.shrink] when the list is empty.
   Widget _buildSection(BuildContext context, List<_PropSpec> props) {
     if (props.isEmpty) return const SizedBox.shrink();
     final bg = Theme.of(context).chipTheme.backgroundColor;
@@ -146,7 +206,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
           ),
       ];
 
-  List<_PropSpec> _spanProps(BuildContext context, TextStyle style) => [
+  List<_PropSpec> _spanProps(TextStyle style) => [
         if (style.fontFamily != null)
           (
             icon: Icons.font_download,
@@ -175,7 +235,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
           (
             icon: Icons.color_lens,
             subtitle: 'color',
-            child: _colorSwatch(context, style.color!)
+            child: _ColorSwatch(style.color!)
           ),
         if (style.height != null)
           (
@@ -205,16 +265,16 @@ class BoxInfoPanelWidget extends StatelessWidget {
           (
             icon: Icons.format_color_fill,
             subtitle: 'bg color',
-            child: _colorSwatch(context, style.backgroundColor!)
+            child: _ColorSwatch(style.backgroundColor!)
           ),
       ];
 
-  List<_PropSpec> _decorationProps(BuildContext context, BoxDecoration d) => [
+  List<_PropSpec> _decorationProps(BoxDecoration d) => [
         if (d.color != null)
           (
             icon: Icons.palette,
             subtitle: 'color',
-            child: _colorSwatch(context, d.color!)
+            child: _ColorSwatch(d.color!)
           ),
         if (d.borderRadius != null)
           (
@@ -228,18 +288,18 @@ class BoxInfoPanelWidget extends StatelessWidget {
             subtitle: 'shape',
             child: Text(d.shape.name)
           ),
-        if (d.border != null) ..._borderProps(context, d.border!),
+        if (d.border != null) ..._borderProps(d.border!),
         if (d.boxShadow != null && d.boxShadow!.isNotEmpty)
           (
             icon: Icons.blur_on,
             subtitle: 'shadows',
-            child: _shadowsWidget(context, d.boxShadow!)
+            child: _shadowsWidget(d.boxShadow!)
           ),
         if (d.gradient != null)
           (
             icon: Icons.gradient,
             subtitle: 'gradient',
-            child: _gradientWidget(context, d.gradient!)
+            child: _gradientWidget(d.gradient!)
           ),
       ];
 
@@ -273,7 +333,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
           ),
       ];
 
-  List<_PropSpec> _imageProps(BuildContext context, RenderImage target) => [
+  List<_PropSpec> _imageProps(RenderImage target) => [
         if (target.fit != null)
           (
             icon: Icons.fit_screen,
@@ -307,7 +367,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
           (
             icon: Icons.color_lens,
             subtitle: 'color tint',
-            child: _colorSwatch(context, target.color!)
+            child: _ColorSwatch(target.color!)
           ),
       ];
 
@@ -319,47 +379,6 @@ class BoxInfoPanelWidget extends StatelessWidget {
         ),
       ];
 
-  // ─── Color helpers ────────────────────────────────────────────
-
-  Widget _colorDot(Color color) => Container(
-        width: 12,
-        height: 12,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(2),
-          border: Border.all(
-            color: Colors.black.withValues(alpha: 0.15),
-            width: 0.5,
-          ),
-        ),
-      );
-
-  Widget _colorSwatch(BuildContext context, Color color) {
-    final hex = '#${colorToHexString(color, withAlpha: true)}';
-    return GestureDetector(
-      onTap: () {
-        Clipboard.setData(ClipboardData(text: hex));
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              spacing: 8,
-              children: [
-                _colorDot(color),
-                Text('Copied $hex'),
-              ],
-            ),
-          ),
-        );
-      },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: 4.0,
-        children: [_colorDot(color), Text(hex)],
-      ),
-    );
-  }
-
   // ─── Format helpers ───────────────────────────────────────────
 
   String _formatBorderRadius(BorderRadiusGeometry geometry) {
@@ -368,7 +387,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
     return '${f(r.topLeft.x)}, ${f(r.topRight.x)}, ${f(r.bottomRight.x)}, ${f(r.bottomLeft.x)}';
   }
 
-  List<_PropSpec> _borderProps(BuildContext context, BoxBorder border) {
+  List<_PropSpec> _borderProps(BoxBorder border) {
     if (border is! Border) {
       return [
         (
@@ -384,8 +403,14 @@ class BoxInfoPanelWidget extends StatelessWidget {
     final activeSides = sides.where((s) => s.width > 0).toList();
     final colors = activeSides.map((s) => s.color).toSet();
 
-    // Uniform border — single chip with color swatch + width
-    if (colors.length <= 1 && activeSides.isNotEmpty) {
+    Widget sideChild(Color color, String wStr) => Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 4,
+          children: [_ColorSwatch(color), Text(wStr)],
+        );
+
+    // Uniform border — single chip
+    if (colors.length == 1 && activeSides.isNotEmpty) {
       final wStr = widths.length == 1
           ? 'w:${widths.first.toStringAsFixed(1)}'
           : 'w:${sides.map((s) => s.width.toStringAsFixed(1)).join('/')}';
@@ -393,11 +418,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
         (
           icon: Icons.border_all,
           subtitle: 'border',
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 4,
-            children: [_colorSwatch(context, colors.first), Text(wStr)],
-          ),
+          child: sideChild(colors.first, wStr),
         ),
       ];
     }
@@ -410,45 +431,35 @@ class BoxInfoPanelWidget extends StatelessWidget {
           (
             icon: Icons.border_all,
             subtitle: 'border ${sideLabels[i]}',
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              spacing: 4,
-              children: [
-                _colorSwatch(context, sides[i].color),
-                Text('w:${sides[i].width.toStringAsFixed(1)}'),
-              ],
+            child: sideChild(
+              sides[i].color,
+              'w:${sides[i].width.toStringAsFixed(1)}',
             ),
           ),
     ];
   }
 
-  Widget _shadowsWidget(BuildContext context, List<BoxShadow> shadows) {
-    if (shadows.length == 1) {
-      final s = shadows.first;
-      final dx = s.offset.dx.toStringAsFixed(1);
-      final dy = s.offset.dy.toStringAsFixed(1);
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _colorSwatch(context, s.color),
-          Text('blur:${s.blurRadius.toStringAsFixed(1)} ($dx,$dy)'),
-        ],
-      );
-    }
+  Widget _shadowsWidget(List<BoxShadow> shadows) {
     final maxBlur =
         shadows.map((s) => s.blurRadius).reduce((a, b) => a > b ? a : b);
+    final label = shadows.length == 1
+        ? () {
+            final s = shadows.first;
+            return 'blur:${s.blurRadius.toStringAsFixed(1)} (${s.offset.dx.toStringAsFixed(1)},${s.offset.dy.toStringAsFixed(1)})';
+          }()
+        : '${shadows.length}× blur:${maxBlur.toStringAsFixed(1)}';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final s in shadows) _colorSwatch(context, s.color),
-        Text('${shadows.length}× blur:${maxBlur.toStringAsFixed(1)}'),
+        for (final s in shadows) _ColorSwatch(s.color),
+        Text(label),
       ],
     );
   }
 
-  Widget _gradientWidget(BuildContext context, Gradient g) {
+  Widget _gradientWidget(Gradient g) {
     final (type, colors) = switch (g) {
       LinearGradient() => ('linear', g.colors),
       RadialGradient() => ('radial', g.colors),
@@ -460,44 +471,11 @@ class BoxInfoPanelWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final c in colors) _colorSwatch(context, c),
+        for (final c in colors) _ColorSwatch(c),
         Text(type),
       ],
     );
   }
-
-  // ─── Decorated box detection ──────────────────────────────────
-
-  RenderDecoratedBox? _findSelectedDecoratedBox() {
-    final target = boxInfo.targetRenderBox;
-    return target is RenderDecoratedBox ? target : null;
-  }
-
-  RenderDecoratedBox? _findNearestDecoratedBoxFromHitTestPath() {
-    for (final box in boxInfo.hitTestPath) {
-      if (box.size != boxInfo.targetRect.size) return null;
-      if (box is RenderDecoratedBox) return box;
-    }
-    return null;
-  }
-
-  RenderDecoratedBox? _findChildDecoratedBoxFromTarget() {
-    final target = boxInfo.targetRenderBox;
-    if (target is RenderProxyBoxMixin) {
-      final child = target.child;
-      if (child != null &&
-          child.size == target.size &&
-          child is RenderDecoratedBox) {
-        return child;
-      }
-    }
-    return null;
-  }
-
-  RenderDecoratedBox? _findDecoratedBoxForDisplay() =>
-      _findSelectedDecoratedBox() ??
-      _findNearestDecoratedBoxFromHitTestPath() ??
-      _findChildDecoratedBoxFromTarget();
 
   // ─── Section builders ─────────────────────────────────────────
 
@@ -548,22 +526,10 @@ class BoxInfoPanelWidget extends StatelessWidget {
     ]);
   }
 
-  List<TextStyle> _extractTextStyles(InlineSpan span,
-      [List<TextStyle>? styles]) {
-    styles ??= [];
-    if (span.style != null) styles.add(span.style!);
-    if (span is TextSpan && span.children != null) {
-      for (final child in span.children!) {
-        _extractTextStyles(child, styles);
-      }
-    }
-    return styles;
-  }
-
   Widget _buildParagraphSection(BuildContext context, RenderParagraph target) {
     final dividerColor = Theme.of(context).colorScheme.outlineVariant;
     final spanSections = _extractTextStyles(target.text)
-        .map((s) => _spanProps(context, s))
+        .map(_spanProps)
         .where((p) => p.isNotEmpty)
         .toList();
     return Column(
@@ -579,37 +545,6 @@ class BoxInfoPanelWidget extends StatelessWidget {
     );
   }
 
-  /// Extracts [Color] from [ColoredBox]'s private render object.
-  ///
-  /// [_RenderColoredBox] is a private Flutter class with no public type.
-  /// Dynamic dispatch works in both debug and release (AOT vtable resolution).
-  ///
-  /// Checks target directly, then its direct child — mirrors the same strategy
-  /// as [_findChildDecoratedBoxFromTarget]. Container wraps ColoredBox inside
-  /// ConstrainedBox, so the target is RenderConstrainedBox and the ColoredBox
-  /// is one level below.
-  Color? _coloredBoxColor(RenderBox target) {
-    final direct = _tryColoredBoxColor(target);
-    if (direct != null) return direct;
-    if (target is RenderProxyBoxMixin) {
-      final child = target.child;
-      if (child is RenderBox && child.size == target.size) {
-        return _tryColoredBoxColor(child);
-      }
-    }
-    return null;
-  }
-
-  Color? _tryColoredBoxColor(RenderBox box) {
-    if (!box.runtimeType.toString().contains('ColoredBox')) return null;
-    try {
-      return (box as dynamic).color as Color;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Returns the type-specific info widget, or null if nothing to show.
   Widget? _buildTypeSection(BuildContext context, RenderBox target) {
     if (target is RenderParagraph) {
       return _buildParagraphSection(context, target);
@@ -618,24 +553,24 @@ class BoxInfoPanelWidget extends StatelessWidget {
       return _buildSection(context, _flexProps(target));
     }
     if (target is RenderImage) {
-      return _buildSection(context, _imageProps(context, target));
+      return _buildSection(context, _imageProps(target));
     }
     if (target is RenderOpacity) {
       return _buildSection(context, _opacityProps(target));
     }
-    final coloredBoxColor = _coloredBoxColor(target);
+    final coloredBoxColor = boxInfo.coloredBoxColor;
     if (coloredBoxColor != null) {
       return _buildSection(context, [
         (
           icon: Icons.palette,
           subtitle: 'color',
-          child: _colorSwatch(context, coloredBoxColor)
+          child: _ColorSwatch(coloredBoxColor),
         ),
       ]);
     }
-    final decorated = _findDecoratedBoxForDisplay();
+    final decorated = boxInfo.decoratedBoxForDisplay;
     if (decorated?.decoration case final BoxDecoration d) {
-      return _buildSection(context, _decorationProps(context, d));
+      return _buildSection(context, _decorationProps(d));
     }
     return null;
   }
