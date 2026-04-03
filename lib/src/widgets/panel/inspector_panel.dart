@@ -30,6 +30,8 @@ class _InspectorPanelState extends State<InspectorPanel> {
       case InspectorMode.inspector:
       case InspectorMode.inspectAndCompare:
         return Icons.format_shapes;
+      case InspectorMode.compareSelect:
+        return Icons.compare;
       case InspectorMode.colorPicker:
         return Icons.colorize;
       case InspectorMode.zoom:
@@ -65,6 +67,10 @@ class _InspectorPanelState extends State<InspectorPanel> {
 
     final _height = 16.0 +
         (controller.isWidgetInspectorEnabled ? 56.0 : 0.0) +
+        (controller.isWidgetInspectorEnabled &&
+                controller.isWidgetInspectAndCompareEnabled
+            ? 64.0
+            : 0.0) +
         (controller.isColorPickerEnabled ? 64.0 : 0.0) +
         (controller.isZoomEnabled ? 64.0 : 0.0);
 
@@ -98,6 +104,26 @@ class _InspectorPanelState extends State<InspectorPanel> {
                     : Colors.black54,
                 child: const Icon(Icons.format_shapes),
               ),
+            if (controller.isWidgetInspectorEnabled &&
+                controller.isWidgetInspectAndCompareEnabled) ...[
+              const SizedBox(height: 8.0),
+              FloatingActionButton(
+                onPressed: () {
+                  if (mode == InspectorMode.compareSelect) {
+                    controller.exitCompareMode();
+                  } else {
+                    controller.enterCompareMode();
+                  }
+                },
+                backgroundColor: mode == InspectorMode.compareSelect
+                    ? Colors.blue
+                    : Colors.white,
+                foregroundColor: mode == InspectorMode.compareSelect
+                    ? Colors.white
+                    : Colors.black54,
+                child: const Icon(Icons.compare),
+              ),
+            ],
             if (controller.isColorPickerEnabled) ...[
               const SizedBox(height: 8.0),
               FloatingActionButton(

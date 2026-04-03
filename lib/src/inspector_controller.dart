@@ -17,6 +17,7 @@ enum InspectorMode {
   none,
   inspector,
   inspectAndCompare,
+  compareSelect,
   colorPicker,
   zoom,
 }
@@ -127,17 +128,36 @@ class InspectorController {
   }
 
   void _toggleMode(bool enable, InspectorMode targetMode) {
+    if (targetMode == InspectorMode.inspectAndCompare) {
+      if (enable) {
+        if (modeNotifier.value == InspectorMode.compareSelect) {
+          exitCompareMode();
+        } else {
+          enterCompareMode();
+        }
+      }
+      return;
+    }
+
     if (enable) {
       setMode(targetMode);
     } else if (modeNotifier.value == targetMode) {
-      // Special case: when releasing Y key in inspectAndCompare mode,
-      // return to inspector mode instead of none
-      if (targetMode == InspectorMode.inspectAndCompare) {
-        setMode(InspectorMode.inspector);
-      } else {
-        setMode(InspectorMode.none);
-      }
+      setMode(InspectorMode.none);
     }
+  }
+
+  /// Enter compare mode: wait for the user to tap a second widget.
+  void enterCompareMode() {
+    if (currentRenderBoxNotifier.value == null) return;
+    if (!isWidgetInspectorEnabled || !isWidgetInspectAndCompareEnabled) return;
+    modeNotifier.value = InspectorMode.compareSelect;
+    comparedRenderBoxNotifier.value = null;
+  }
+
+  /// Exit compare mode and reset compare state.
+  void exitCompareMode() {
+    modeNotifier.value = InspectorMode.inspector;
+    comparedRenderBoxNotifier.value = null;
   }
 
   void setMode(InspectorMode mode, {BuildContext? context}) {
@@ -149,6 +169,7 @@ class InspectorController {
         if (!isWidgetInspectorEnabled) return;
         break;
       case InspectorMode.inspectAndCompare:
+      case InspectorMode.compareSelect:
         if (!isWidgetInspectorEnabled || !isWidgetInspectAndCompareEnabled) {
           return;
         }
@@ -177,15 +198,14 @@ class InspectorController {
     switch (oldMode) {
       case InspectorMode.inspector:
       case InspectorMode.inspectAndCompare:
-        // Don't cleanup when switching between inspector and inspectAndCompare
-        // because they share the same state (currentRenderBox)
+      case InspectorMode.compareSelect:
         if (newMode != InspectorMode.inspector &&
-            newMode != InspectorMode.inspectAndCompare) {
+            newMode != InspectorMode.inspectAndCompare &&
+            newMode != InspectorMode.compareSelect) {
           currentRenderBoxNotifier.value = null;
           hoveredRenderBoxNotifier.value = null;
           comparedRenderBoxNotifier.value = null;
         } else {
-          // Only clear hover and compare when staying in inspector modes
           hoveredRenderBoxNotifier.value = null;
           comparedRenderBoxNotifier.value = null;
         }
@@ -217,6 +237,7 @@ class InspectorController {
     switch (mode) {
       case InspectorMode.inspector:
       case InspectorMode.inspectAndCompare:
+      case InspectorMode.compareSelect:
         break;
       case InspectorMode.colorPicker:
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -258,6 +279,18 @@ class InspectorController {
 
     if (mode == InspectorMode.zoom) {
       setMode(InspectorMode.none);
+      return;
+    }
+
+    if (mode == InspectorMode.compareSelect) {
+      if (pointerOffset == null) return;
+      final compared = _computeBoxInfoAt(pointerOffset);
+      if (compared != null &&
+          compared.targetRenderBox !=
+              currentRenderBoxNotifier.value?.targetRenderBox) {
+        comparedRenderBoxNotifier.value = compared;
+      }
+      modeNotifier.value = InspectorMode.inspector;
       return;
     }
 
@@ -305,7 +338,8 @@ class InspectorController {
     }
 
     if (mode == InspectorMode.inspector ||
-        mode == InspectorMode.inspectAndCompare) {
+        mode == InspectorMode.inspectAndCompare ||
+        mode == InspectorMode.compareSelect) {
       if (mode == InspectorMode.inspectAndCompare) {
         hoveredRenderBoxNotifier.value = null;
         final compare = _computeBoxInfoAt(pointerOffset);

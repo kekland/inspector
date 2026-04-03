@@ -248,7 +248,8 @@ class InspectorState extends State<Inspector> {
           builder: (context) {
             final mode = _controller.modeNotifier.value;
             if (mode != InspectorMode.inspector &&
-                mode != InspectorMode.inspectAndCompare) {
+                mode != InspectorMode.inspectAndCompare &&
+                mode != InspectorMode.compareSelect) {
               return const SizedBox.shrink();
             }
 
