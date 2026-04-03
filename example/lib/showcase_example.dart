@@ -351,7 +351,11 @@ class _Box extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(width: size, height: size, color: color);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: color),
+    );
   }
 }
 
