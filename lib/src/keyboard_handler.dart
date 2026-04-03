@@ -49,17 +49,36 @@ class KeyboardHandler {
     _isRegistered = false;
   }
 
+  static final _modifierKeys = {
+    LogicalKeyboardKey.alt,
+    LogicalKeyboardKey.altLeft,
+    LogicalKeyboardKey.altRight,
+    LogicalKeyboardKey.control,
+    LogicalKeyboardKey.controlLeft,
+    LogicalKeyboardKey.controlRight,
+    LogicalKeyboardKey.meta,
+    LogicalKeyboardKey.metaLeft,
+    LogicalKeyboardKey.metaRight,
+  };
+
   bool _handler(KeyEvent event) {
     if (event is KeyRepeatEvent) return false;
+
+    final pressed = HardwareKeyboard.instance.logicalKeysPressed;
+    final hasModifier = pressed.any(_modifierKeys.contains);
 
     if (inspectorStateKeys.contains(event.logicalKey)) {
       onInspectorStateChanged(event is! KeyUpEvent);
     } else if (inspectAndCompareKeys.contains(event.logicalKey)) {
-      onInspectAndCompareChanged(event is! KeyUpEvent);
+      if (event is KeyUpEvent || hasModifier) {
+        onInspectAndCompareChanged(event is! KeyUpEvent);
+      }
     } else if (colorPickerStateKeys.contains(event.logicalKey)) {
       onColorPickerStateChanged(event is! KeyUpEvent);
     } else if (zoomStateKeys.contains(event.logicalKey)) {
-      onZoomStateChanged(event is! KeyUpEvent);
+      if (event is KeyUpEvent || hasModifier) {
+        onZoomStateChanged(event is! KeyUpEvent);
+      }
     }
 
     return false;

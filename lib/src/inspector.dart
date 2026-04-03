@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:inspector/src/inspector_controller.dart';
 import 'package:inspector/src/widgets/ignore_tap_gesture.dart';
 import 'package:inspector/src/widgets/zoom/zoom_overlay.dart';
@@ -34,6 +35,21 @@ class Inspector extends StatefulWidget {
     this.isPanelVisible = true,
     this.isEnabled,
     this.panelBuilder,
+    this.inspectorShortcuts = const [
+      LogicalKeyboardKey.alt,
+      LogicalKeyboardKey.altLeft,
+      LogicalKeyboardKey.altRight,
+      LogicalKeyboardKey.meta,
+      LogicalKeyboardKey.metaLeft,
+      LogicalKeyboardKey.metaRight,
+    ],
+    this.inspectAndCompareShortcuts = const [LogicalKeyboardKey.keyY],
+    this.colorPickerShortcuts = const [
+      LogicalKeyboardKey.shift,
+      LogicalKeyboardKey.shiftLeft,
+      LogicalKeyboardKey.shiftRight,
+    ],
+    this.zoomShortcuts = const [LogicalKeyboardKey.keyZ],
   }) : super(key: key);
 
   final Widget child;
@@ -44,6 +60,10 @@ class Inspector extends StatefulWidget {
   final Widget Function(
           BuildContext context, InspectorController controller, Widget child)?
       panelBuilder;
+  final List<LogicalKeyboardKey> inspectorShortcuts;
+  final List<LogicalKeyboardKey> inspectAndCompareShortcuts;
+  final List<LogicalKeyboardKey> colorPickerShortcuts;
+  final List<LogicalKeyboardKey> zoomShortcuts;
 
   static InspectorState of(BuildContext context) {
     final InspectorState? result = maybeOf(context);
@@ -77,6 +97,14 @@ class InspectorState extends State<Inspector> {
   late InspectorController _controller;
   InspectorController get controller => _controller;
 
+  InspectorController _createController() => InspectorController(
+        isEnabled: _isEnabled,
+        widgetInspectorShortcuts: widget.inspectorShortcuts,
+        widgetInspectAndCompareShortcuts: widget.inspectAndCompareShortcuts,
+        colorPickerShortcuts: widget.colorPickerShortcuts,
+        zoomShortcuts: widget.zoomShortcuts,
+      );
+
   static const double _overlayMinSize = 128;
   static const double _overlayMaxSize = 246;
   static const double _overlayOffsetY = 16;
@@ -86,10 +114,7 @@ class InspectorState extends State<Inspector> {
     _isPanelVisible = widget.isPanelVisible;
     super.initState();
 
-    _controller = widget.controller ??
-        InspectorController(
-          isEnabled: _isEnabled,
-        );
+    _controller = widget.controller ?? _createController();
 
     if (_isEnabled) {
       _controller.registerKeyboardHandler();
@@ -110,7 +135,7 @@ class InspectorState extends State<Inspector> {
           _controller.registerKeyboardHandler();
         }
       } else if (oldWidget.controller != null) {
-        _controller = InspectorController(isEnabled: _isEnabled);
+        _controller = _createController();
         if (_isEnabled) {
           _controller.registerKeyboardHandler();
         }
