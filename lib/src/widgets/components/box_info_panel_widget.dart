@@ -379,6 +379,25 @@ class BoxInfoPanelWidget extends StatelessWidget {
         ),
       ];
 
+  List<_PropSpec> _physicalShapeProps(RenderPhysicalShape target) => [
+        (
+          icon: Icons.palette,
+          subtitle: 'color',
+          child: _ColorSwatch(target.color),
+        ),
+        if (target.elevation > 0)
+          (
+            icon: Icons.layers,
+            subtitle: 'elevation',
+            child: Text(target.elevation.toStringAsFixed(1)),
+          ),
+        (
+          icon: Icons.blur_on,
+          subtitle: 'shadow color',
+          child: _ColorSwatch(target.shadowColor),
+        ),
+      ];
+
   // ─── Format helpers ───────────────────────────────────────────
 
   String _formatBorderRadius(BorderRadiusGeometry geometry) {
@@ -557,6 +576,9 @@ class BoxInfoPanelWidget extends StatelessWidget {
     }
     if (target is RenderOpacity) {
       return _buildSection(context, _opacityProps(target));
+    }
+    if (target is RenderPhysicalShape) {
+      return _buildSection(context, _physicalShapeProps(target));
     }
     final coloredBoxColor = boxInfo.coloredBoxColor;
     if (coloredBoxColor != null) {
