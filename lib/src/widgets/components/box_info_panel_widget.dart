@@ -345,6 +345,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
         !isSelectedParagraph && _hasSelectedDecoratedInfo();
 
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: SizedBox(
         width: double.infinity,
         child: Theme(
