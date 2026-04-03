@@ -166,10 +166,15 @@ class InspectorController {
         if (!isWidgetInspectorEnabled) return;
         break;
       case InspectorMode.inspectAndCompare:
+        if (!isWidgetInspectorEnabled || !isWidgetInspectAndCompareEnabled) {
+          return;
+        }
+        break;
       case InspectorMode.compareSelect:
         if (!isWidgetInspectorEnabled || !isWidgetInspectAndCompareEnabled) {
           return;
         }
+        if (currentRenderBoxNotifier.value == null) return;
         break;
       case InspectorMode.colorPicker:
         if (!isColorPickerEnabled) return;
