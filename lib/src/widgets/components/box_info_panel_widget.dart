@@ -578,40 +578,41 @@ class BoxInfoPanelWidget extends StatelessWidget {
     );
   }
 
-  Widget? _buildTypeSection(BuildContext context, RenderBox target) {
-    if (target is RenderParagraph) {
-      return _buildParagraphSection(context, target);
-    }
-    if (target is RenderStack) {
-      return _buildSection(context, _stackProps(target));
-    }
-    if (target is RenderFlex) {
-      return _buildSection(context, _flexProps(target));
-    }
-    if (target is RenderImage) {
-      return _buildSection(context, _imageProps(target));
-    }
-    if (target is RenderOpacity) {
-      return _buildSection(context, _opacityProps(target));
-    }
-    if (target is RenderPhysicalShape) {
-      return _buildSection(context, _physicalShapeProps(target));
-    }
+  /// Type-specific props for the target render box, excluding decoration.
+  /// Returns an empty list when the type has no known props.
+  List<_PropSpec> _typeProps(RenderBox target) => [
+        if (target is RenderStack) ..._stackProps(target),
+        if (target is RenderFlex) ..._flexProps(target),
+        if (target is RenderImage) ..._imageProps(target),
+        if (target is RenderOpacity) ..._opacityProps(target),
+        if (target is RenderPhysicalShape) ..._physicalShapeProps(target),
+      ];
+
+  /// Decoration props resolved from the hit-test path.
+  /// Prefers [ColoredBox] color over [BoxDecoration] to avoid duplication.
+  List<_PropSpec> _resolvedDecorationProps() {
     final coloredBoxColor = boxInfo.coloredBoxColor;
     if (coloredBoxColor != null) {
-      return _buildSection(context, [
+      return [
         (
           icon: Icons.palette,
           subtitle: 'color',
           child: _ColorSwatch(coloredBoxColor),
         ),
-      ]);
+      ];
     }
-    final decorated = boxInfo.decoratedBoxForDisplay;
-    if (decorated?.decoration case final BoxDecoration d) {
-      return _buildSection(context, _decorationProps(d));
+    if (boxInfo.decoratedBoxForDisplay?.decoration case final BoxDecoration d) {
+      return _decorationProps(d);
     }
-    return null;
+    return [];
+  }
+
+  Widget? _buildTypeSection(BuildContext context, RenderBox target) {
+    if (target is RenderParagraph) {
+      return _buildParagraphSection(context, target);
+    }
+    final props = [..._typeProps(target), ..._resolvedDecorationProps()];
+    return props.isEmpty ? null : _buildSection(context, props);
   }
 
   // ─── build ────────────────────────────────────────────────────

@@ -184,7 +184,7 @@ class BoxInfo {
 
   RenderDecoratedBox? _findNearestDecoratedBoxFromHitTestPath() {
     for (final box in hitTestPath) {
-      if (box.size != targetRect.size) return null;
+      if (box.size != targetRenderBox.size) continue;
       if (box is RenderDecoratedBox) return box;
     }
     return null;
