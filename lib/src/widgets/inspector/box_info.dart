@@ -23,10 +23,39 @@ class BoxInfo {
     RenderBox targetRenderBox = boxes.first;
     RenderBox? containerRenderBox;
 
-    /// Used [isSmallerThan] to find the smallest box under the cursor
+    // Returns true for render objects that carry meaningful visual/layout
+    // information. Used to break ties when two boxes share the same size:
+    // a meaningful type beats a plain proxy wrapper.
+    bool isMeaningful(RenderBox box) =>
+        box is RenderDecoratedBox ||
+        box is RenderPhysicalShape ||
+        box is RenderPhysicalModel ||
+        box is RenderStack ||
+        box is RenderFlex ||
+        box is RenderWrap ||
+        box is RenderParagraph ||
+        box is RenderImage ||
+        box is RenderEditable ||
+        box is RenderOpacity ||
+        box is RenderAnimatedOpacity ||
+        box is RenderClipRect ||
+        box is RenderClipRRect ||
+        box is RenderClipRSuperellipse ||
+        box is RenderClipOval ||
+        box is RenderCustomPaint ||
+        box is RenderTransform ||
+        box is RenderFittedBox ||
+        box is RenderAspectRatio ||
+        box is RenderBackdropFilter;
+
     for (final box in boxes) {
       if (box.size.isSmallerThan(targetRenderBox.size)) {
         targetRenderBox = box;
+      } else if (box.size == targetRenderBox.size) {
+        // On a tie, only update when the new box is meaningful:
+        // non→non keeps the first hit (e.g. _RenderColoredBox before RenderPadding),
+        // meaningful→non is skipped, and meaningful→meaningful prefers the innermost.
+        if (isMeaningful(box)) targetRenderBox = box;
       }
     }
 
@@ -95,7 +124,10 @@ class BoxInfo {
     final bottom =
         containerRenderBox!.size.height - originalTargetSize.height - top;
 
-    return EdgeInsets.fromLTRB(left, top, right, bottom);
+    // Snap sub-pixel floating-point noise to zero.
+    double snap(double v) => v.abs() < 0.5 ? 0.0 : v;
+    return EdgeInsets.fromLTRB(
+        snap(left), snap(top), snap(right), snap(bottom));
   }
 
   Rect? get paddingRectLeft => containerRect != null
@@ -143,8 +175,11 @@ class BoxInfo {
     final _right = padding.right.toStringAsFixed(1);
     final _bottom = padding.bottom.toStringAsFixed(1);
 
-    return '$_left, $_top, $_right, $_bottom';
+    return 'L:$_left  T:$_top  R:$_right  B:$_bottom';
   }
+
+  /// True when the detected container is a flex layout (Row/Column).
+  bool get isContainerFlex => containerRenderBox is RenderFlex;
 
   bool get isDecoratedBox =>
       targetRenderBox is RenderDecoratedBox &&
@@ -161,6 +196,66 @@ class BoxInfo {
   BorderRadiusGeometry? getDecoratedBoxBorderRadius() {
     assert(isDecoratedBox);
     return _decoration.borderRadius;
+  }
+
+  /// The nearest [RenderDecoratedBox] with [BoxDecoration] relevant to the
+  /// selected target. Checks the target directly, then the hit-test path,
+  /// then the target's direct child — in that priority order.
+  RenderDecoratedBox? get decoratedBoxForDisplay =>
+      _findSelectedDecoratedBox() ??
+      _findNearestDecoratedBoxFromHitTestPath() ??
+      _findChildDecoratedBoxFromTarget();
+
+  RenderDecoratedBox? _findSelectedDecoratedBox() =>
+      targetRenderBox is RenderDecoratedBox
+          ? targetRenderBox as RenderDecoratedBox
+          : null;
+
+  RenderDecoratedBox? _findNearestDecoratedBoxFromHitTestPath() {
+    for (final box in hitTestPath) {
+      if (box.size != targetRenderBox.size) continue;
+      if (box is RenderDecoratedBox) return box;
+    }
+    return null;
+  }
+
+  RenderDecoratedBox? _findChildDecoratedBoxFromTarget() {
+    if (targetRenderBox is RenderProxyBoxMixin) {
+      final child = (targetRenderBox as RenderProxyBoxMixin).child;
+      if (child != null &&
+          child.size == targetRenderBox.size &&
+          child is RenderDecoratedBox) {
+        return child;
+      }
+    }
+    return null;
+  }
+
+  /// The fill color of a [ColoredBox] that is or wraps the target, if any.
+  ///
+  /// [_RenderColoredBox] is a private Flutter class — dynamic dispatch is used
+  /// because there is no public type to cast to.
+  Color? get coloredBoxColor =>
+      _tryColoredBoxColor(targetRenderBox) ??
+      (targetRenderBox is RenderProxyBoxMixin
+          ? _tryColoredBoxColorFromProxy(targetRenderBox as RenderProxyBoxMixin)
+          : null);
+
+  Color? _tryColoredBoxColorFromProxy(RenderProxyBoxMixin proxy) {
+    final child = proxy.child;
+    if (child is RenderBox && child.size == targetRenderBox.size) {
+      return _tryColoredBoxColor(child);
+    }
+    return null;
+  }
+
+  Color? _tryColoredBoxColor(RenderBox box) {
+    if (!box.runtimeType.toString().contains('ColoredBox')) return null;
+    try {
+      return (box as dynamic).color as Color;
+    } catch (_) {
+      return null;
+    }
   }
 }
 

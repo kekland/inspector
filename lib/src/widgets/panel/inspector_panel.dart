@@ -30,6 +30,8 @@ class _InspectorPanelState extends State<InspectorPanel> {
       case InspectorMode.inspector:
       case InspectorMode.inspectAndCompare:
         return Icons.format_shapes;
+      case InspectorMode.compareSelect:
+        return Icons.format_shapes;
       case InspectorMode.colorPicker:
         return Icons.colorize;
       case InspectorMode.zoom:
@@ -86,14 +88,17 @@ class _InspectorPanelState extends State<InspectorPanel> {
             if (controller.isWidgetInspectorEnabled)
               FloatingActionButton(
                 onPressed: () => controller.setMode(
-                  mode == InspectorMode.inspector
+                  (mode == InspectorMode.inspector ||
+                          mode == InspectorMode.compareSelect)
                       ? InspectorMode.none
                       : InspectorMode.inspector,
                 ),
-                backgroundColor: mode == InspectorMode.inspector
+                backgroundColor: (mode == InspectorMode.inspector ||
+                        mode == InspectorMode.compareSelect)
                     ? Colors.blue
                     : Colors.white,
-                foregroundColor: mode == InspectorMode.inspector
+                foregroundColor: (mode == InspectorMode.inspector ||
+                        mode == InspectorMode.compareSelect)
                     ? Colors.white
                     : Colors.black54,
                 child: const Icon(Icons.format_shapes),

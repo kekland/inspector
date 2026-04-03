@@ -4,17 +4,92 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:inspector/src/widgets/color_picker/utils.dart';
 import 'package:inspector/src/widgets/inspector/box_info.dart';
+import 'package:inspector/src/widgets/inspector/compare_distances.dart';
 import 'package:inspector/src/widgets/inspector/render_box_extension.dart';
+
+/// Declarative spec for a single info chip.
+typedef _PropSpec = ({IconData icon, String subtitle, Widget child});
+
+List<TextStyle> _extractTextStyles(InlineSpan span, [List<TextStyle>? styles]) {
+  styles ??= [];
+  if (span.style != null) styles.add(span.style!);
+  if (span is TextSpan && span.children != null) {
+    for (final child in span.children!) {
+      _extractTextStyles(child, styles);
+    }
+  }
+  return styles;
+}
+
+// ─── Private widget classes ───────────────────────────────────────────────────
+
+class _ColorDot extends StatelessWidget {
+  const _ColorDot(this.color);
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 12,
+        height: 12,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(2),
+          border: Border.all(
+            color: Colors.black.withValues(alpha: 0.15),
+            width: 0.5,
+          ),
+        ),
+      );
+}
+
+class _ColorSwatch extends StatelessWidget {
+  const _ColorSwatch(this.color);
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final hex = '#${colorToHexString(color, withAlpha: true)}';
+    return GestureDetector(
+      onTap: () {
+        Clipboard.setData(ClipboardData(text: hex));
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              spacing: 8,
+              children: [_ColorDot(color), Text('Copied $hex')],
+            ),
+          ),
+        );
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 4.0,
+        children: [_ColorDot(color), Text(hex)],
+      ),
+    );
+  }
+}
+
+// ─── Main widget ──────────────────────────────────────────────────────────────
 
 class BoxInfoPanelWidget extends StatelessWidget {
   const BoxInfoPanelWidget({
     Key? key,
     required this.boxInfo,
     this.comparedBoxInfo,
+    this.onCompare,
+    this.isCompareActive = false,
   }) : super(key: key);
 
   final BoxInfo boxInfo;
   final BoxInfo? comparedBoxInfo;
+  final VoidCallback? onCompare;
+  final bool isCompareActive;
+
+  // ─── Core builders ────────────────────────────────────────────
 
   Widget _buildInfoRow(
     BuildContext context, {
@@ -25,21 +100,16 @@ class BoxInfoPanelWidget extends StatelessWidget {
     Color? backgroundColor,
   }) {
     final theme = Theme.of(context);
-
-    Widget _child = Row(
+    Widget content = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          size: 20.0,
-          color: iconColor ?? theme.textTheme.bodySmall?.color,
-        ),
+        Icon(icon,
+            size: 20.0, color: iconColor ?? theme.textTheme.bodySmall?.color),
         const SizedBox(width: 12.0),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             child,
-            const SizedBox(height: 0.0),
             Text(
               subtitle,
               style: theme.textTheme.bodySmall?.copyWith(fontSize: 10.0),
@@ -48,25 +118,515 @@ class BoxInfoPanelWidget extends StatelessWidget {
         ),
       ],
     );
-
     if (backgroundColor != null) {
-      _child = Container(
+      content = Container(
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(4.0),
         ),
         padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-        child: _child,
+        child: content,
       );
     }
-
-    return _child;
+    return content;
   }
+
+  Widget _buildSection(BuildContext context, List<_PropSpec> props) {
+    if (props.isEmpty) return const SizedBox.shrink();
+    final bg = Theme.of(context).chipTheme.backgroundColor;
+    return Wrap(
+      spacing: 12.0,
+      runSpacing: 8.0,
+      children: [
+        for (final p in props)
+          _buildInfoRow(
+            context,
+            icon: p.icon,
+            subtitle: p.subtitle,
+            backgroundColor: bg,
+            child: p.child,
+          ),
+      ],
+    );
+  }
+
+  // ─── Property extractors ──────────────────────────────────────
+
+  List<_PropSpec> _constraintsProps() {
+    final c = boxInfo.targetRenderBox.constraints;
+    String fmt(double min, double max) {
+      if (min == max) return '=${min.toStringAsFixed(1)}';
+      final hi = max == double.infinity ? '∞' : max.toStringAsFixed(1);
+      return '${min.toStringAsFixed(1)}–$hi';
+    }
+
+    return [
+      (
+        icon: Icons.swap_horiz,
+        subtitle: 'W constraint',
+        child: Text(fmt(c.minWidth, c.maxWidth))
+      ),
+      (
+        icon: Icons.swap_vert,
+        subtitle: 'H constraint',
+        child: Text(fmt(c.minHeight, c.maxHeight))
+      ),
+    ];
+  }
+
+  List<_PropSpec> _paragraphProps(RenderParagraph target) => [
+        (
+          icon: Icons.format_align_left,
+          subtitle: 'text align',
+          child: Text(target.textAlign.name)
+        ),
+        if (target.maxLines != null)
+          (
+            icon: Icons.format_list_numbered,
+            subtitle: 'max lines',
+            child: Text('${target.maxLines}')
+          ),
+        if (target.overflow != TextOverflow.clip)
+          (
+            icon: Icons.more_horiz,
+            subtitle: 'overflow',
+            child: Text(target.overflow.name)
+          ),
+        if (!target.softWrap)
+          (
+            icon: Icons.wrap_text,
+            subtitle: 'soft wrap',
+            child: const Text('off')
+          ),
+        if (target.textScaler != TextScaler.noScaling)
+          (
+            icon: Icons.text_fields,
+            subtitle: 'text scale',
+            child: Text(target.textScaler.toString())
+          ),
+      ];
+
+  List<_PropSpec> _spanProps(TextStyle style) => [
+        if (style.fontFamily != null)
+          (
+            icon: Icons.font_download,
+            subtitle: 'font family',
+            child: Text(style.fontFamily!)
+          ),
+        if (style.fontSize != null)
+          (
+            icon: Icons.format_size,
+            subtitle: 'font size',
+            child: Text(style.fontSize!.toStringAsFixed(1))
+          ),
+        if (style.fontWeight != null)
+          (
+            icon: Icons.line_weight,
+            subtitle: 'weight',
+            child: Text(style.fontWeight.toString())
+          ),
+        if (style.fontStyle != null)
+          (
+            icon: Icons.format_italic,
+            subtitle: 'style',
+            child: Text(style.fontStyle.toString())
+          ),
+        if (style.color != null)
+          (
+            icon: Icons.color_lens,
+            subtitle: 'color',
+            child: _ColorSwatch(style.color!)
+          ),
+        if (style.height != null)
+          (
+            icon: Icons.height,
+            subtitle: 'height',
+            child: Text(style.height!.toStringAsFixed(1))
+          ),
+        if (style.letterSpacing != null)
+          (
+            icon: Icons.horizontal_distribute,
+            subtitle: 'letter spacing',
+            child: Text(style.letterSpacing!.toStringAsFixed(1))
+          ),
+        if (style.wordSpacing != null)
+          (
+            icon: Icons.space_bar,
+            subtitle: 'word spacing',
+            child: Text(style.wordSpacing!.toStringAsFixed(1))
+          ),
+        if (style.decoration != null && style.decoration != TextDecoration.none)
+          (
+            icon: Icons.text_format,
+            subtitle: 'decoration',
+            child: Text(style.decoration.toString())
+          ),
+        if (style.backgroundColor != null)
+          (
+            icon: Icons.format_color_fill,
+            subtitle: 'bg color',
+            child: _ColorSwatch(style.backgroundColor!)
+          ),
+      ];
+
+  List<_PropSpec> _decorationProps(BoxDecoration d) => [
+        if (d.color != null)
+          (
+            icon: Icons.palette,
+            subtitle: 'color',
+            child: _ColorSwatch(d.color!)
+          ),
+        if (d.borderRadius != null)
+          (
+            icon: Icons.rounded_corner,
+            subtitle: 'border radius (LTRB)',
+            child: Text(_formatBorderRadius(d.borderRadius!))
+          ),
+        if (d.shape != BoxShape.rectangle)
+          (
+            icon: Icons.circle_outlined,
+            subtitle: 'shape',
+            child: Text(d.shape.name)
+          ),
+        if (d.border != null) ..._borderProps(d.border!),
+        if (d.boxShadow != null && d.boxShadow!.isNotEmpty)
+          (
+            icon: Icons.blur_on,
+            subtitle: 'shadows',
+            child: _shadowsWidget(d.boxShadow!)
+          ),
+        if (d.gradient != null)
+          (
+            icon: Icons.gradient,
+            subtitle: 'gradient',
+            child: _gradientWidget(d.gradient!)
+          ),
+      ];
+
+  List<_PropSpec> _stackProps(RenderStack target) => [
+        (
+          icon: Icons.align_vertical_bottom,
+          subtitle: 'alignment',
+          child: Text(target.alignment.toString()),
+        ),
+        if (target.fit != StackFit.loose)
+          (
+            icon: Icons.fit_screen,
+            subtitle: 'fit',
+            child: Text(target.fit.name),
+          ),
+      ];
+
+  List<_PropSpec> _wrapProps(RenderWrap target) => [
+        (
+          icon: Icons.swap_horiz,
+          subtitle: 'direction',
+          child: Text(target.direction.name),
+        ),
+        if (target.spacing != 0)
+          (
+            icon: Icons.space_bar,
+            subtitle: 'spacing',
+            child: Text(target.spacing.toStringAsFixed(1)),
+          ),
+        if (target.runSpacing != 0)
+          (
+            icon: Icons.height,
+            subtitle: 'run spacing',
+            child: Text(target.runSpacing.toStringAsFixed(1)),
+          ),
+        if (target.alignment != WrapAlignment.start)
+          (
+            icon: Icons.format_align_left,
+            subtitle: 'alignment',
+            child: Text(target.alignment.name),
+          ),
+        if (target.runAlignment != WrapAlignment.start)
+          (
+            icon: Icons.vertical_align_top,
+            subtitle: 'run alignment',
+            child: Text(target.runAlignment.name),
+          ),
+      ];
+
+  List<_PropSpec> _clipRRectProps(RenderClipRRect target) {
+    final radius = target.borderRadius;
+    if (radius == BorderRadius.zero) return [];
+    return [
+      (
+        icon: Icons.rounded_corner,
+        subtitle: 'clip radius (LTRB)',
+        child: Text(_formatBorderRadius(radius)),
+      ),
+    ];
+  }
+
+  List<_PropSpec> _customPaintProps(RenderCustomPaint target) => [
+        if (target.painter != null)
+          (
+            icon: Icons.brush,
+            subtitle: 'painter',
+            child: Text(target.painter.runtimeType.toString()),
+          ),
+        if (target.foregroundPainter != null)
+          (
+            icon: Icons.brush,
+            subtitle: 'fg painter',
+            child: Text(target.foregroundPainter.runtimeType.toString()),
+          ),
+      ];
+
+  List<_PropSpec> _flexProps(RenderFlex target) => [
+        (
+          icon: Icons.swap_horiz,
+          subtitle: 'direction',
+          child: Text(target.direction.name)
+        ),
+        (
+          icon: Icons.space_bar,
+          subtitle: 'main axis',
+          child: Text(target.mainAxisAlignment.name)
+        ),
+        (
+          icon: Icons.vertical_align_center,
+          subtitle: 'cross axis',
+          child: Text(target.crossAxisAlignment.name)
+        ),
+        if (target.mainAxisSize != MainAxisSize.max)
+          (
+            icon: Icons.compress,
+            subtitle: 'main size',
+            child: Text(target.mainAxisSize.name)
+          ),
+        if (target.verticalDirection != VerticalDirection.down)
+          (
+            icon: Icons.swap_vert,
+            subtitle: 'vertical dir',
+            child: Text(target.verticalDirection.name)
+          ),
+      ];
+
+  List<_PropSpec> _imageProps(RenderImage target) => [
+        if (target.fit != null)
+          (
+            icon: Icons.fit_screen,
+            subtitle: 'fit',
+            child: Text(target.fit!.name)
+          ),
+        (
+          icon: Icons.crop_free,
+          subtitle: 'alignment',
+          child: Text(target.alignment.toString())
+        ),
+        if (target.width != null)
+          (
+            icon: Icons.swap_horiz,
+            subtitle: 'width',
+            child: Text(target.width!.toStringAsFixed(1))
+          ),
+        if (target.height != null)
+          (
+            icon: Icons.swap_vert,
+            subtitle: 'height',
+            child: Text(target.height!.toStringAsFixed(1))
+          ),
+        if (target.repeat != ImageRepeat.noRepeat)
+          (
+            icon: Icons.repeat,
+            subtitle: 'repeat',
+            child: Text(target.repeat.name)
+          ),
+        if (target.color != null)
+          (
+            icon: Icons.color_lens,
+            subtitle: 'color tint',
+            child: _ColorSwatch(target.color!)
+          ),
+      ];
+
+  List<_PropSpec> _opacityProps(RenderOpacity target) => [
+        (
+          icon: Icons.opacity,
+          subtitle: 'opacity',
+          child: Text(target.opacity.toStringAsFixed(2))
+        ),
+      ];
+
+  List<_PropSpec> _physicalModelProps({
+    required Color color,
+    required double elevation,
+    required Color shadowColor,
+  }) =>
+      [
+        (
+          icon: Icons.palette,
+          subtitle: 'color',
+          child: _ColorSwatch(color),
+        ),
+        if (elevation > 0)
+          (
+            icon: Icons.layers,
+            subtitle: 'elevation',
+            child: Text(elevation.toStringAsFixed(1)),
+          ),
+        (
+          icon: Icons.blur_on,
+          subtitle: 'shadow color',
+          child: _ColorSwatch(shadowColor),
+        ),
+      ];
+
+  List<_PropSpec> _physicalShapeProps(RenderPhysicalShape target) =>
+      _physicalModelProps(
+        color: target.color,
+        elevation: target.elevation,
+        shadowColor: target.shadowColor,
+      );
+
+  List<_PropSpec> _physicalModelBoxProps(RenderPhysicalModel target) =>
+      _physicalModelProps(
+        color: target.color,
+        elevation: target.elevation,
+        shadowColor: target.shadowColor,
+      );
+
+  List<_PropSpec> _fittedBoxProps(RenderFittedBox target) => [
+        (
+          icon: Icons.fit_screen,
+          subtitle: 'fit',
+          child: Text(target.fit.name),
+        ),
+        if (target.alignment != Alignment.center)
+          (
+            icon: Icons.crop_free,
+            subtitle: 'alignment',
+            child: Text(target.alignment.toString()),
+          ),
+      ];
+
+  List<_PropSpec> _aspectRatioProps(RenderAspectRatio target) => [
+        (
+          icon: Icons.aspect_ratio,
+          subtitle: 'aspect ratio',
+          child: Text(target.aspectRatio.toStringAsFixed(2)),
+        ),
+      ];
+
+  List<_PropSpec> _clipRSuperellipseProps(RenderClipRSuperellipse target) {
+    final radius = target.borderRadius;
+    if (radius == BorderRadius.zero) return [];
+    return [
+      (
+        icon: Icons.rounded_corner,
+        subtitle: 'clip radius (LTRB)',
+        child: Text(_formatBorderRadius(radius)),
+      ),
+    ];
+  }
+
+  // ─── Format helpers ───────────────────────────────────────────
+
+  String _formatBorderRadius(BorderRadiusGeometry geometry) {
+    final r = geometry.resolve(TextDirection.ltr);
+    String f(double v) => v.toStringAsFixed(1);
+    return '${f(r.topLeft.x)}, ${f(r.topRight.x)}, ${f(r.bottomRight.x)}, ${f(r.bottomLeft.x)}';
+  }
+
+  List<_PropSpec> _borderProps(BoxBorder border) {
+    if (border is! Border) {
+      return [
+        (
+          icon: Icons.border_all,
+          subtitle: 'border',
+          child: Text(border.runtimeType.toString()),
+        ),
+      ];
+    }
+
+    final sides = [border.top, border.right, border.bottom, border.left];
+    final widths = sides.map((s) => s.width).toSet();
+    final activeSides = sides.where((s) => s.width > 0).toList();
+    final colors = activeSides.map((s) => s.color).toSet();
+
+    Widget sideChild(Color color, String wStr) => Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 4,
+          children: [_ColorSwatch(color), Text(wStr)],
+        );
+
+    // Uniform border — single chip
+    if (colors.length == 1 && activeSides.isNotEmpty) {
+      final wStr = widths.length == 1
+          ? 'w:${widths.first.toStringAsFixed(1)}'
+          : 'w:${sides.map((s) => s.width.toStringAsFixed(1)).join('/')}';
+      return [
+        (
+          icon: Icons.border_all,
+          subtitle: 'border',
+          child: sideChild(colors.first, wStr),
+        ),
+      ];
+    }
+
+    // Non-uniform border — one chip per active side
+    const sideLabels = ['T', 'R', 'B', 'L'];
+    return [
+      for (var i = 0; i < sides.length; i++)
+        if (sides[i].width > 0)
+          (
+            icon: Icons.border_all,
+            subtitle: 'border ${sideLabels[i]}',
+            child: sideChild(
+              sides[i].color,
+              'w:${sides[i].width.toStringAsFixed(1)}',
+            ),
+          ),
+    ];
+  }
+
+  Widget _shadowsWidget(List<BoxShadow> shadows) {
+    final maxBlur =
+        shadows.map((s) => s.blurRadius).reduce((a, b) => a > b ? a : b);
+    final label = shadows.length == 1
+        ? () {
+            final s = shadows.first;
+            return 'blur:${s.blurRadius.toStringAsFixed(1)} (${s.offset.dx.toStringAsFixed(1)},${s.offset.dy.toStringAsFixed(1)})';
+          }()
+        : '${shadows.length}× blur:${maxBlur.toStringAsFixed(1)}';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final s in shadows) _ColorSwatch(s.color),
+        Text(label),
+      ],
+    );
+  }
+
+  Widget _gradientWidget(Gradient g) {
+    final (type, colors) = switch (g) {
+      LinearGradient() => ('linear', g.colors),
+      RadialGradient() => ('radial', g.colors),
+      SweepGradient() => ('sweep', g.colors),
+      _ => (g.runtimeType.toString(), <Color>[]),
+    };
+    if (colors.isEmpty) return Text(type);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final c in colors) _ColorSwatch(c),
+        Text(type),
+      ],
+    );
+  }
+
+  // ─── Section builders ─────────────────────────────────────────
 
   Widget _buildMainRow(BuildContext context) {
     final theme = Theme.of(context);
     final displaySize = boxInfo.targetRenderBox.displaySize;
-
     return Wrap(
       spacing: 12.0,
       runSpacing: 8.0,
@@ -75,302 +635,123 @@ class BoxInfoPanelWidget extends StatelessWidget {
           context,
           icon: Icons.format_shapes,
           subtitle: 'size',
+          backgroundColor: theme.chipTheme.backgroundColor,
           child: Text(
             '${displaySize.width.toStringAsFixed(1)} × ${displaySize.height.toStringAsFixed(1)}',
           ),
-          backgroundColor: theme.chipTheme.backgroundColor,
         ),
-        if (boxInfo.containerRect != null)
+        if (boxInfo.containerRect != null && !boxInfo.isContainerFlex)
           _buildInfoRow(
             context,
             icon: Icons.straighten,
             subtitle: 'padding (LTRB)',
-            child: Text(boxInfo.describeOriginalPadding()),
             backgroundColor: theme.chipTheme.backgroundColor,
+            child: Text(boxInfo.describeOriginalPadding()),
           ),
       ],
     );
   }
 
   Widget _buildComparedRow(BuildContext context) {
-    final theme = Theme.of(context);
-    final from = boxInfo.targetRect;
-    final to = comparedBoxInfo!.targetRect;
-
-    // Calculate scale factor from the transformation
-    final scaledSize = boxInfo.targetRect.size;
-    final originalSize = boxInfo.targetRenderBox.size;
+    final originalWidth = boxInfo.targetRenderBox.size.width;
     final scale =
-        originalSize.width > 0 ? scaledSize.width / originalSize.width : 1.0;
-
-    double left = 0, right = 0, top = 0, bottom = 0;
-
-    // Horizontal distances
-    if (from.right <= to.left) {
-      // from is left of to
-      right = to.left - from.right;
-    } else if (to.right <= from.left) {
-      // from is right of to
-      left = from.left - to.right;
-    } else {
-      // They overlap horizontally
-      left = (from.left - to.left).abs();
-      right = (from.right - to.right).abs();
-    }
-
-    // Vertical distances
-    if (from.bottom <= to.top) {
-      // from is above to
-      bottom = to.top - from.bottom;
-    } else if (to.bottom <= from.top) {
-      // from is below to
-      top = from.top - to.bottom;
-    } else {
-      // They overlap vertically
-      top = (from.top - to.top).abs();
-      bottom = (from.bottom - to.bottom).abs();
-    }
-
-    // Convert distances to original (unzoomed) coordinates
-    left /= scale;
-    right /= scale;
-    top /= scale;
-    bottom /= scale;
-
-    return Wrap(
-      spacing: 12.0,
-      runSpacing: 8.0,
-      children: [
-        _buildInfoRow(
-          context,
-          icon: Icons.open_with,
-          subtitle: 'Distances (LTRB)',
-          child: Text(
-            '${left.toStringAsFixed(1)}, ${top.toStringAsFixed(1)}, ${right.toStringAsFixed(1)}, ${bottom.toStringAsFixed(1)}',
-          ),
-          backgroundColor: theme.chipTheme.backgroundColor,
-        ),
-      ],
+        originalWidth > 0 ? boxInfo.targetRect.width / originalWidth : 1.0;
+    final distances = computeCompareDistances(
+      boxInfo.targetRect,
+      comparedBoxInfo!.targetRect,
+      scale: scale,
     );
-  }
-
-  String _formatBorderRadiusLTRB(BorderRadiusGeometry geometry) {
-    final resolved = geometry.resolve(TextDirection.ltr);
-
-    String f(double v) => v.toStringAsFixed(1);
-
-    return '${f(resolved.topLeft.x)}, ${f(resolved.topRight.x)}, ${f(resolved.bottomRight.x)}, ${f(resolved.bottomLeft.x)}';
-  }
-
-  RenderDecoratedBox? _findSelectedDecoratedBox() {
-    final target = boxInfo.targetRenderBox;
-    return target is RenderDecoratedBox ? target : null;
-  }
-
-  RenderDecoratedBox? _findNearestDecoratedBoxFromHitTestPath() {
-    // When tapping a Container, the selected RenderBox might be a child
-    // (e.g. alignment/padding) instead of the RenderDecoratedBox itself.
-    // Use the hitTestPath to locate the nearest decorated box in the same
-    // subtree under the pointer.
-    for (final box in boxInfo.hitTestPath) {
-      if (box.size != boxInfo.targetRect.size) return null;
-      if (box is RenderDecoratedBox) return box;
-    }
-    return null;
-  }
-
-  RenderDecoratedBox? _findChildDecoratedBoxFromTarget() {
-    final target = boxInfo.targetRenderBox;
-    if (target is RenderProxyBoxMixin) {
-      final child = target.child;
-      if (child != null &&
-          child.size == target.size &&
-          child is RenderDecoratedBox) {
-        return child;
-      }
-    }
-    return null;
-  }
-
-  RenderDecoratedBox? _findDecoratedBoxForDisplay() {
-    // Prefer the selected render object when it is decorated; otherwise, fall
-    // back to the nearest decorated box under the pointer.
-    return _findSelectedDecoratedBox() ??
-        _findNearestDecoratedBoxFromHitTestPath() ??
-        _findChildDecoratedBoxFromTarget();
-  }
-
-  bool _hasSelectedDecoratedInfo() {
-    // Selection-first policy: never show decoration info when the selected box
-    // is a RenderParagraph (text selection should focus on text).
-    if (boxInfo.targetRenderBox is RenderParagraph) return false;
-
-    final decorated = _findDecoratedBoxForDisplay();
-    if (decorated == null) return false;
-
-    final d = decorated.decoration;
-    if (d is! BoxDecoration) return false;
-
-    return d.color != null ||
-        d.borderRadius != null ||
-        d.shape != BoxShape.rectangle ||
-        d.border != null ||
-        d.boxShadow != null ||
-        d.gradient != null;
-  }
-
-  Widget _buildRenderDecoratedBoxInfo(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final renderDecoratedBox = _findDecoratedBoxForDisplay();
-    if (renderDecoratedBox == null) return const SizedBox.shrink();
-
-    final decoration = renderDecoratedBox.decoration;
-    if (decoration is! BoxDecoration) return const SizedBox.shrink();
-
-    return Wrap(
-      spacing: 12.0,
-      runSpacing: 8.0,
-      children: [
-        if (decoration.borderRadius != null)
-          _buildInfoRow(
-            context,
-            icon: Icons.rounded_corner,
-            subtitle: 'border radius (LTRB)',
-            backgroundColor: theme.chipTheme.backgroundColor,
-            child: Text(_formatBorderRadiusLTRB(decoration.borderRadius!)),
-          ),
-        if (decoration.shape != BoxShape.rectangle)
-          _buildInfoRow(
-            context,
-            icon: Icons.circle_outlined,
-            subtitle: 'shape',
-            backgroundColor: theme.chipTheme.backgroundColor,
-            child: Text(decoration.shape.toString()),
-          ),
-        _buildInfoRow(
-          context,
-          icon: Icons.palette,
-          subtitle: 'color',
-          backgroundColor: theme.chipTheme.backgroundColor,
-          child: Text(
-            decoration.color != null
-                ? '#${colorToHexString(decoration.color!, withAlpha: true)}'
-                : 'n/a',
-          ),
+    return _buildSection(context, [
+      for (final d in distances)
+        (
+          icon: d.icon,
+          subtitle: d.side.name,
+          child: Text(d.value.toStringAsFixed(1))
         ),
-      ],
-    );
+    ]);
   }
 
-  List<TextStyle> _extractTextStyles(
-    InlineSpan span, [
-    List<TextStyle>? styles,
-  ]) {
-    styles ??= [];
-
-    if (span.style != null) {
-      styles.add(span.style!);
-    }
-
-    if (span is TextSpan && span.children != null) {
-      for (final child in span.children!) {
-        _extractTextStyles(child, styles);
-      }
-    }
-
-    return styles;
-  }
-
-  Widget _buildRenderParagraphInfo(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final target = boxInfo.targetRenderBox;
-    if (target is! RenderParagraph) return const SizedBox.shrink();
-
-    final styles = _extractTextStyles(target.text);
-
-    if (styles.isEmpty) return const SizedBox.shrink();
-
+  Widget _buildParagraphSection(BuildContext context, RenderParagraph target) {
+    final dividerColor = Theme.of(context).colorScheme.outlineVariant;
+    final spanSections = _extractTextStyles(target.text)
+        .map(_spanProps)
+        .where((p) => p.isNotEmpty)
+        .toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 4,
-      children: styles
-          .map(
-            (style) => Wrap(
-              spacing: 12.0,
-              runSpacing: 8.0,
-              children: [
-                _buildInfoRow(
-                  context,
-                  icon: Icons.font_download,
-                  subtitle: 'font family',
-                  backgroundColor: theme.chipTheme.backgroundColor,
-                  child: Text(style.fontFamily ?? 'n/a'),
-                ),
-                _buildInfoRow(
-                  context,
-                  icon: Icons.format_size,
-                  subtitle: 'font size',
-                  backgroundColor: theme.chipTheme.backgroundColor,
-                  child: Text(style.fontSize?.toStringAsFixed(1) ?? 'n/a'),
-                ),
-                _buildInfoRow(
-                  context,
-                  icon: Icons.text_format,
-                  subtitle: 'decoration',
-                  backgroundColor: theme.chipTheme.backgroundColor,
-                  child: Text(style.decoration?.toString() ?? 'n/a'),
-                ),
-                _buildInfoRow(
-                  context,
-                  icon: Icons.color_lens,
-                  subtitle: 'color',
-                  backgroundColor: theme.chipTheme.backgroundColor,
-                  child: Text(
-                    style.color != null
-                        ? '#${colorToHexString(style.color!, withAlpha: true)}'
-                        : 'n/a',
-                  ),
-                ),
-                _buildInfoRow(
-                  context,
-                  icon: Icons.height,
-                  subtitle: 'height',
-                  backgroundColor: theme.chipTheme.backgroundColor,
-                  child: Text(style.height?.toStringAsFixed(1) ?? 'n/a'),
-                ),
-                _buildInfoRow(
-                  context,
-                  icon: Icons.horizontal_distribute,
-                  subtitle: 'Letter Spacing',
-                  backgroundColor: theme.chipTheme.backgroundColor,
-                  child: Text(style.letterSpacing?.toStringAsFixed(1) ?? 'n/a'),
-                ),
-                _buildInfoRow(
-                  context,
-                  icon: Icons.line_weight,
-                  subtitle: 'weight',
-                  backgroundColor: theme.chipTheme.backgroundColor,
-                  child: Text(style.fontWeight?.toString() ?? 'n/a'),
-                ),
-              ],
-            ),
-          )
-          .toList(),
+      children: [
+        _buildSection(context, _paragraphProps(target)),
+        if (spanSections.isNotEmpty) ...[
+          Divider(height: 12, color: dividerColor),
+          for (final props in spanSections) _buildSection(context, props),
+        ],
+      ],
     );
   }
+
+  /// Type-specific props for the target render box, excluding decoration.
+  /// Returns an empty list when the type has no known props.
+  List<_PropSpec> _typeProps(RenderBox target) => [
+        if (target is RenderStack) ..._stackProps(target),
+        if (target is RenderFlex) ..._flexProps(target),
+        if (target is RenderWrap) ..._wrapProps(target),
+        if (target is RenderImage) ..._imageProps(target),
+        if (target is RenderOpacity) ..._opacityProps(target),
+        if (target is RenderAnimatedOpacity)
+          (
+            icon: Icons.opacity,
+            subtitle: 'opacity',
+            child: Text(target.opacity.value.toStringAsFixed(2)),
+          ),
+        if (target is RenderPhysicalShape) ..._physicalShapeProps(target),
+        if (target is RenderPhysicalModel) ..._physicalModelBoxProps(target),
+        if (target is RenderClipRRect) ..._clipRRectProps(target),
+        if (target is RenderCustomPaint) ..._customPaintProps(target),
+        if (target is RenderFittedBox) ..._fittedBoxProps(target),
+        if (target is RenderAspectRatio) ..._aspectRatioProps(target),
+        if (target is RenderClipRSuperellipse)
+          ..._clipRSuperellipseProps(target),
+      ];
+
+  /// Decoration props resolved from the hit-test path.
+  /// Prefers [ColoredBox] color over [BoxDecoration] to avoid duplication.
+  List<_PropSpec> _resolvedDecorationProps() {
+    final coloredBoxColor = boxInfo.coloredBoxColor;
+    if (coloredBoxColor != null) {
+      return [
+        (
+          icon: Icons.palette,
+          subtitle: 'color',
+          child: _ColorSwatch(coloredBoxColor),
+        ),
+      ];
+    }
+    if (boxInfo.decoratedBoxForDisplay?.decoration case final BoxDecoration d) {
+      return _decorationProps(d);
+    }
+    return [];
+  }
+
+  Widget? _buildTypeSection(BuildContext context, RenderBox target) {
+    if (target is RenderParagraph) {
+      return _buildParagraphSection(context, target);
+    }
+    final props = [..._typeProps(target), ..._resolvedDecorationProps()];
+    return props.isEmpty ? null : _buildSection(context, props);
+  }
+
+  // ─── build ────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     final target = boxInfo.targetRenderBox;
-    final isSelectedParagraph = target is RenderParagraph;
-    final hasSelectedDecoration =
-        !isSelectedParagraph && _hasSelectedDecoratedInfo();
+    final dividerColor = theme.colorScheme.outlineVariant;
+    final typeSection = _buildTypeSection(context, target);
 
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: SizedBox(
         width: double.infinity,
         child: Theme(
@@ -381,19 +762,25 @@ class BoxInfoPanelWidget extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    describeIdentity(boxInfo.targetRenderBox),
+                    describeIdentity(target),
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
-                TextButton(
-                  child: const Text('Copy'),
-                  onPressed: () {
-                    Clipboard.setData(
-                      ClipboardData(
-                        text: boxInfo.targetRenderBox.toStringDeep(),
-                      ),
-                    );
-                  },
+                if (onCompare != null)
+                  IconButton(
+                    iconSize: 18.0,
+                    color: isCompareActive
+                        ? theme.colorScheme.primary
+                        : theme.iconTheme.color,
+                    onPressed: onCompare,
+                    icon: const Icon(Icons.compare),
+                  ),
+                IconButton(
+                  iconSize: 18.0,
+                  onPressed: () => Clipboard.setData(
+                    ClipboardData(text: target.toStringDeep()),
+                  ),
+                  icon: const Icon(Icons.copy),
                 ),
               ],
             ),
@@ -406,26 +793,16 @@ class BoxInfoPanelWidget extends StatelessWidget {
             expandedCrossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildMainRow(context),
-              if (boxInfo.targetRenderBox.attached == true &&
+              Divider(height: 16.0, color: dividerColor),
+              _buildSection(context, _constraintsProps()),
+              if (target.attached &&
                   comparedBoxInfo?.targetRenderBox.attached == true) ...[
-                Divider(
-                  height: 16.0,
-                  color: theme.dividerColor,
-                ),
+                Divider(height: 16.0, color: dividerColor),
                 _buildComparedRow(context),
               ],
-              if (isSelectedParagraph) ...[
-                Divider(
-                  height: 16.0,
-                  color: theme.dividerColor,
-                ),
-                _buildRenderParagraphInfo(context),
-              ] else if (hasSelectedDecoration) ...[
-                Divider(
-                  height: 16.0,
-                  color: theme.dividerColor,
-                ),
-                _buildRenderDecoratedBoxInfo(context),
+              if (typeSection != null) ...[
+                Divider(height: 16.0, color: dividerColor),
+                typeSection,
               ],
             ],
           ),
