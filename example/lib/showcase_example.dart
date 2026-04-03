@@ -119,8 +119,112 @@ class _TypographyTab extends StatelessWidget {
               ],
             ),
           ),
+          const Divider(),
+          const Text('textAlign variants'),
+          _AlignedText(
+            text:
+                'Left aligned text that wraps onto multiple lines to show alignment clearly.',
+            align: TextAlign.left,
+          ),
+          _AlignedText(
+            text:
+                'Center aligned text that wraps onto multiple lines to show alignment clearly.',
+            align: TextAlign.center,
+          ),
+          _AlignedText(
+            text:
+                'Right aligned text that wraps onto multiple lines to show alignment clearly.',
+            align: TextAlign.right,
+          ),
+          _AlignedText(
+            text:
+                'Justify aligned text that wraps onto multiple lines to show how justify alignment spreads words.',
+            align: TextAlign.justify,
+          ),
+          const Divider(),
+          const Text('overflow + maxLines variants'),
+          _OverflowText(
+            label: 'ellipsis, maxLines: 1',
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+          _OverflowText(
+            label: 'ellipsis, maxLines: 2',
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
+          ),
+          _OverflowText(
+            label: 'fade, maxLines: 1',
+            overflow: TextOverflow.fade,
+            maxLines: 1,
+          ),
+          _OverflowText(
+            label: 'clip, maxLines: 1',
+            overflow: TextOverflow.clip,
+            maxLines: 1,
+          ),
+          _OverflowText(
+            label: 'no maxLines (unrestricted)',
+            overflow: TextOverflow.ellipsis,
+            maxLines: null,
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _AlignedText extends StatelessWidget {
+  const _AlignedText({required this.text, required this.align});
+  final String text;
+  final TextAlign align;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(text, textAlign: align, style: const TextStyle(fontSize: 14)),
+    );
+  }
+}
+
+class _OverflowText extends StatelessWidget {
+  const _OverflowText({
+    required this.label,
+    required this.overflow,
+    required this.maxLines,
+  });
+  final String label;
+  final TextOverflow overflow;
+  final int? maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        const SizedBox(height: 4),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            'This is a long text that is intentionally long to trigger overflow behaviour in the inspector showcase.',
+            overflow: overflow,
+            maxLines: maxLines,
+            style: const TextStyle(fontSize: 14),
+          ),
+        ),
+      ],
     );
   }
 }

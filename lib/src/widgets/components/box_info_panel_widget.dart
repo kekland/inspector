@@ -266,84 +266,114 @@ class BoxInfoPanelWidget extends StatelessWidget {
 
     if (styles.isEmpty) return const SizedBox.shrink();
 
+    final paragraphRows = <Widget>[
+      _buildInfoRow(
+        context,
+        icon: Icons.format_align_left,
+        subtitle: 'text align',
+        backgroundColor: theme.chipTheme.backgroundColor,
+        child: Text(target.textAlign.name),
+      ),
+      if (target.maxLines != null)
+        _buildInfoRow(
+          context,
+          icon: Icons.wrap_text,
+          subtitle: 'max lines',
+          backgroundColor: theme.chipTheme.backgroundColor,
+          child: Text('${target.maxLines}'),
+        ),
+      if (target.overflow != TextOverflow.clip)
+        _buildInfoRow(
+          context,
+          icon: Icons.more_horiz,
+          subtitle: 'overflow',
+          backgroundColor: theme.chipTheme.backgroundColor,
+          child: Text(target.overflow.name),
+        ),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 4,
-      children: styles.map((style) {
-        final rows = <Widget>[
-          if (style.fontFamily != null)
-            _buildInfoRow(
-              context,
-              icon: Icons.font_download,
-              subtitle: 'font family',
-              backgroundColor: theme.chipTheme.backgroundColor,
-              child: Text(style.fontFamily!),
-            ),
-          if (style.fontSize != null)
-            _buildInfoRow(
-              context,
-              icon: Icons.format_size,
-              subtitle: 'font size',
-              backgroundColor: theme.chipTheme.backgroundColor,
-              child: Text(style.fontSize!.toStringAsFixed(1)),
-            ),
-          if (style.fontWeight != null)
-            _buildInfoRow(
-              context,
-              icon: Icons.line_weight,
-              subtitle: 'weight',
-              backgroundColor: theme.chipTheme.backgroundColor,
-              child: Text(style.fontWeight.toString()),
-            ),
-          if (style.fontStyle != null)
-            _buildInfoRow(
-              context,
-              icon: Icons.format_italic,
-              subtitle: 'style',
-              backgroundColor: theme.chipTheme.backgroundColor,
-              child: Text(style.fontStyle.toString()),
-            ),
-          if (style.color != null)
-            _buildInfoRow(
-              context,
-              icon: Icons.color_lens,
-              subtitle: 'color',
-              backgroundColor: theme.chipTheme.backgroundColor,
-              child: Text(
-                '#${colorToHexString(style.color!, withAlpha: true)}',
+      children: [
+        Wrap(spacing: 12.0, runSpacing: 8.0, children: paragraphRows),
+        Divider(height: 12, color: theme.colorScheme.outlineVariant),
+        ...styles.map((style) {
+          final rows = <Widget>[
+            if (style.fontFamily != null)
+              _buildInfoRow(
+                context,
+                icon: Icons.font_download,
+                subtitle: 'font family',
+                backgroundColor: theme.chipTheme.backgroundColor,
+                child: Text(style.fontFamily!),
               ),
-            ),
-          if (style.height != null)
-            _buildInfoRow(
-              context,
-              icon: Icons.height,
-              subtitle: 'height',
-              backgroundColor: theme.chipTheme.backgroundColor,
-              child: Text(style.height!.toStringAsFixed(1)),
-            ),
-          if (style.letterSpacing != null)
-            _buildInfoRow(
-              context,
-              icon: Icons.horizontal_distribute,
-              subtitle: 'letter spacing',
-              backgroundColor: theme.chipTheme.backgroundColor,
-              child: Text(style.letterSpacing!.toStringAsFixed(1)),
-            ),
-          if (style.decoration != null &&
-              style.decoration != TextDecoration.none)
-            _buildInfoRow(
-              context,
-              icon: Icons.text_format,
-              subtitle: 'decoration',
-              backgroundColor: theme.chipTheme.backgroundColor,
-              child: Text(style.decoration.toString()),
-            ),
-        ];
+            if (style.fontSize != null)
+              _buildInfoRow(
+                context,
+                icon: Icons.format_size,
+                subtitle: 'font size',
+                backgroundColor: theme.chipTheme.backgroundColor,
+                child: Text(style.fontSize!.toStringAsFixed(1)),
+              ),
+            if (style.fontWeight != null)
+              _buildInfoRow(
+                context,
+                icon: Icons.line_weight,
+                subtitle: 'weight',
+                backgroundColor: theme.chipTheme.backgroundColor,
+                child: Text(style.fontWeight.toString()),
+              ),
+            if (style.fontStyle != null)
+              _buildInfoRow(
+                context,
+                icon: Icons.format_italic,
+                subtitle: 'style',
+                backgroundColor: theme.chipTheme.backgroundColor,
+                child: Text(style.fontStyle.toString()),
+              ),
+            if (style.color != null)
+              _buildInfoRow(
+                context,
+                icon: Icons.color_lens,
+                subtitle: 'color',
+                backgroundColor: theme.chipTheme.backgroundColor,
+                child: Text(
+                  '#${colorToHexString(style.color!, withAlpha: true)}',
+                ),
+              ),
+            if (style.height != null)
+              _buildInfoRow(
+                context,
+                icon: Icons.height,
+                subtitle: 'height',
+                backgroundColor: theme.chipTheme.backgroundColor,
+                child: Text(style.height!.toStringAsFixed(1)),
+              ),
+            if (style.letterSpacing != null)
+              _buildInfoRow(
+                context,
+                icon: Icons.horizontal_distribute,
+                subtitle: 'letter spacing',
+                backgroundColor: theme.chipTheme.backgroundColor,
+                child: Text(style.letterSpacing!.toStringAsFixed(1)),
+              ),
+            if (style.decoration != null &&
+                style.decoration != TextDecoration.none)
+              _buildInfoRow(
+                context,
+                icon: Icons.text_format,
+                subtitle: 'decoration',
+                backgroundColor: theme.chipTheme.backgroundColor,
+                child: Text(style.decoration.toString()),
+              ),
+          ];
 
-        if (rows.isEmpty) return const SizedBox.shrink();
+          if (rows.isEmpty) return const SizedBox.shrink();
 
-        return Wrap(spacing: 12.0, runSpacing: 8.0, children: rows);
-      }).toList(),
+          return Wrap(spacing: 12.0, runSpacing: 8.0, children: rows);
+        }),
+      ],
     );
   }
 
@@ -407,20 +437,20 @@ class BoxInfoPanelWidget extends StatelessWidget {
                   comparedBoxInfo?.targetRenderBox.attached == true) ...[
                 Divider(
                   height: 16.0,
-                  color: theme.dividerColor,
+                  color: theme.colorScheme.outlineVariant,
                 ),
                 _buildComparedRow(context),
               ],
               if (isSelectedParagraph) ...[
                 Divider(
                   height: 16.0,
-                  color: theme.dividerColor,
+                  color: theme.colorScheme.outlineVariant,
                 ),
                 _buildRenderParagraphInfo(context),
               ] else if (hasSelectedDecoration) ...[
                 Divider(
                   height: 16.0,
-                  color: theme.dividerColor,
+                  color: theme.colorScheme.outlineVariant,
                 ),
                 _buildRenderDecoratedBoxInfo(context),
               ],
