@@ -501,6 +501,36 @@ class BoxInfoPanelWidget extends StatelessWidget {
     );
   }
 
+  /// Extracts [Color] from [ColoredBox]'s private render object.
+  ///
+  /// [_RenderColoredBox] is a private Flutter class with no public type.
+  /// Dynamic dispatch works in both debug and release (AOT vtable resolution).
+  ///
+  /// Checks target directly, then its direct child — mirrors the same strategy
+  /// as [_findChildDecoratedBoxFromTarget]. Container wraps ColoredBox inside
+  /// ConstrainedBox, so the target is RenderConstrainedBox and the ColoredBox
+  /// is one level below.
+  Color? _coloredBoxColor(RenderBox target) {
+    final direct = _tryColoredBoxColor(target);
+    if (direct != null) return direct;
+    if (target is RenderProxyBoxMixin) {
+      final child = target.child;
+      if (child is RenderBox && child.size == target.size) {
+        return _tryColoredBoxColor(child);
+      }
+    }
+    return null;
+  }
+
+  Color? _tryColoredBoxColor(RenderBox box) {
+    if (!box.runtimeType.toString().contains('ColoredBox')) return null;
+    try {
+      return (box as dynamic).color as Color;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Returns the type-specific info widget, or null if nothing to show.
   Widget? _buildTypeSection(BuildContext context, RenderBox target) {
     if (target is RenderParagraph) {
@@ -514,6 +544,16 @@ class BoxInfoPanelWidget extends StatelessWidget {
     }
     if (target is RenderOpacity) {
       return _buildSection(context, _opacityProps(target));
+    }
+    final coloredBoxColor = _coloredBoxColor(target);
+    if (coloredBoxColor != null) {
+      return _buildSection(context, [
+        (
+          icon: Icons.palette,
+          subtitle: 'color',
+          child: _colorSwatch(coloredBoxColor)
+        ),
+      ]);
     }
     final decorated = _findDecoratedBoxForDisplay();
     if (decorated?.decoration case final BoxDecoration d) {
