@@ -317,6 +317,65 @@ class BoxInfoPanelWidget extends StatelessWidget {
           ),
       ];
 
+  List<_PropSpec> _wrapProps(RenderWrap target) => [
+        (
+          icon: Icons.swap_horiz,
+          subtitle: 'direction',
+          child: Text(target.direction.name),
+        ),
+        if (target.spacing != 0)
+          (
+            icon: Icons.space_bar,
+            subtitle: 'spacing',
+            child: Text(target.spacing.toStringAsFixed(1)),
+          ),
+        if (target.runSpacing != 0)
+          (
+            icon: Icons.height,
+            subtitle: 'run spacing',
+            child: Text(target.runSpacing.toStringAsFixed(1)),
+          ),
+        if (target.alignment != WrapAlignment.start)
+          (
+            icon: Icons.format_align_left,
+            subtitle: 'alignment',
+            child: Text(target.alignment.name),
+          ),
+        if (target.runAlignment != WrapAlignment.start)
+          (
+            icon: Icons.vertical_align_top,
+            subtitle: 'run alignment',
+            child: Text(target.runAlignment.name),
+          ),
+      ];
+
+  List<_PropSpec> _clipRRectProps(RenderClipRRect target) {
+    final radius = target.borderRadius;
+    if (radius == BorderRadius.zero) return [];
+    return [
+      (
+        icon: Icons.rounded_corner,
+        subtitle: 'clip radius (LTRB)',
+        child: Text(_formatBorderRadius(radius)),
+      ),
+    ];
+  }
+
+  List<_PropSpec> _customPaintProps(RenderCustomPaint target) => [
+        if (target.painter != null)
+          (
+            icon: Icons.brush,
+            subtitle: 'painter',
+            child: Text(target.painter.runtimeType.toString()),
+          ),
+        if (target.foregroundPainter != null)
+          (
+            icon: Icons.brush,
+            subtitle: 'fg painter',
+            child: Text(target.foregroundPainter.runtimeType.toString()),
+          ),
+      ];
+
   List<_PropSpec> _flexProps(RenderFlex target) => [
         (
           icon: Icons.swap_horiz,
@@ -393,24 +452,77 @@ class BoxInfoPanelWidget extends StatelessWidget {
         ),
       ];
 
-  List<_PropSpec> _physicalShapeProps(RenderPhysicalShape target) => [
+  List<_PropSpec> _physicalModelProps({
+    required Color color,
+    required double elevation,
+    required Color shadowColor,
+  }) =>
+      [
         (
           icon: Icons.palette,
           subtitle: 'color',
-          child: _ColorSwatch(target.color),
+          child: _ColorSwatch(color),
         ),
-        if (target.elevation > 0)
+        if (elevation > 0)
           (
             icon: Icons.layers,
             subtitle: 'elevation',
-            child: Text(target.elevation.toStringAsFixed(1)),
+            child: Text(elevation.toStringAsFixed(1)),
           ),
         (
           icon: Icons.blur_on,
           subtitle: 'shadow color',
-          child: _ColorSwatch(target.shadowColor),
+          child: _ColorSwatch(shadowColor),
         ),
       ];
+
+  List<_PropSpec> _physicalShapeProps(RenderPhysicalShape target) =>
+      _physicalModelProps(
+        color: target.color,
+        elevation: target.elevation,
+        shadowColor: target.shadowColor,
+      );
+
+  List<_PropSpec> _physicalModelBoxProps(RenderPhysicalModel target) =>
+      _physicalModelProps(
+        color: target.color,
+        elevation: target.elevation,
+        shadowColor: target.shadowColor,
+      );
+
+  List<_PropSpec> _fittedBoxProps(RenderFittedBox target) => [
+        (
+          icon: Icons.fit_screen,
+          subtitle: 'fit',
+          child: Text(target.fit.name),
+        ),
+        if (target.alignment != Alignment.center)
+          (
+            icon: Icons.crop_free,
+            subtitle: 'alignment',
+            child: Text(target.alignment.toString()),
+          ),
+      ];
+
+  List<_PropSpec> _aspectRatioProps(RenderAspectRatio target) => [
+        (
+          icon: Icons.aspect_ratio,
+          subtitle: 'aspect ratio',
+          child: Text(target.aspectRatio.toStringAsFixed(2)),
+        ),
+      ];
+
+  List<_PropSpec> _clipRSuperellipseProps(RenderClipRSuperellipse target) {
+    final radius = target.borderRadius;
+    if (radius == BorderRadius.zero) return [];
+    return [
+      (
+        icon: Icons.rounded_corner,
+        subtitle: 'clip radius (LTRB)',
+        child: Text(_formatBorderRadius(radius)),
+      ),
+    ];
+  }
 
   // ─── Format helpers ───────────────────────────────────────────
 
@@ -583,9 +695,23 @@ class BoxInfoPanelWidget extends StatelessWidget {
   List<_PropSpec> _typeProps(RenderBox target) => [
         if (target is RenderStack) ..._stackProps(target),
         if (target is RenderFlex) ..._flexProps(target),
+        if (target is RenderWrap) ..._wrapProps(target),
         if (target is RenderImage) ..._imageProps(target),
         if (target is RenderOpacity) ..._opacityProps(target),
+        if (target is RenderAnimatedOpacity)
+          (
+            icon: Icons.opacity,
+            subtitle: 'opacity',
+            child: Text(target.opacity.value.toStringAsFixed(2)),
+          ),
         if (target is RenderPhysicalShape) ..._physicalShapeProps(target),
+        if (target is RenderPhysicalModel) ..._physicalModelBoxProps(target),
+        if (target is RenderClipRRect) ..._clipRRectProps(target),
+        if (target is RenderCustomPaint) ..._customPaintProps(target),
+        if (target is RenderFittedBox) ..._fittedBoxProps(target),
+        if (target is RenderAspectRatio) ..._aspectRatioProps(target),
+        if (target is RenderClipRSuperellipse)
+          ..._clipRSuperellipseProps(target),
       ];
 
   /// Decoration props resolved from the hit-test path.

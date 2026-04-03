@@ -23,10 +23,39 @@ class BoxInfo {
     RenderBox targetRenderBox = boxes.first;
     RenderBox? containerRenderBox;
 
-    /// Used [isSmallerThan] to find the smallest box under the cursor
+    // Returns true for render objects that carry meaningful visual/layout
+    // information. Used to break ties when two boxes share the same size:
+    // a meaningful type beats a plain proxy wrapper.
+    bool isMeaningful(RenderBox box) =>
+        box is RenderDecoratedBox ||
+        box is RenderPhysicalShape ||
+        box is RenderPhysicalModel ||
+        box is RenderStack ||
+        box is RenderFlex ||
+        box is RenderWrap ||
+        box is RenderParagraph ||
+        box is RenderImage ||
+        box is RenderEditable ||
+        box is RenderOpacity ||
+        box is RenderAnimatedOpacity ||
+        box is RenderClipRect ||
+        box is RenderClipRRect ||
+        box is RenderClipRSuperellipse ||
+        box is RenderClipOval ||
+        box is RenderCustomPaint ||
+        box is RenderTransform ||
+        box is RenderFittedBox ||
+        box is RenderAspectRatio ||
+        box is RenderBackdropFilter;
+
     for (final box in boxes) {
       if (box.size.isSmallerThan(targetRenderBox.size)) {
+        // Strictly smaller always wins.
         targetRenderBox = box;
+      } else if (box.size == targetRenderBox.size) {
+        // Same size: update unless it would downgrade from meaningful → plain.
+        final downgrade = isMeaningful(targetRenderBox) && !isMeaningful(box);
+        if (!downgrade) targetRenderBox = box;
       }
     }
 
