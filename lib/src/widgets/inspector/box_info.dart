@@ -95,7 +95,10 @@ class BoxInfo {
     final bottom =
         containerRenderBox!.size.height - originalTargetSize.height - top;
 
-    return EdgeInsets.fromLTRB(left, top, right, bottom);
+    // Snap sub-pixel floating-point noise to zero.
+    double snap(double v) => v.abs() < 0.5 ? 0.0 : v;
+    return EdgeInsets.fromLTRB(
+        snap(left), snap(top), snap(right), snap(bottom));
   }
 
   Rect? get paddingRectLeft => containerRect != null
@@ -145,6 +148,9 @@ class BoxInfo {
 
     return 'L:$_left  T:$_top  R:$_right  B:$_bottom';
   }
+
+  /// True when the detected container is a flex layout (Row/Column).
+  bool get isContainerFlex => containerRenderBox is RenderFlex;
 
   bool get isDecoratedBox =>
       targetRenderBox is RenderDecoratedBox &&

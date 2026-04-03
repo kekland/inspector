@@ -12,30 +12,6 @@ import 'package:inspector/src/widgets/inspector/render_box_extension.dart';
 /// [_colorSwatch] for colors.
 typedef _PropSpec = ({IconData icon, String subtitle, Widget child});
 
-/// Renders a small colored square followed by the hex string.
-Widget _colorSwatch(Color color) {
-  final hex = '#${colorToHexString(color, withAlpha: true)}';
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    spacing: 4.0,
-    children: [
-      Container(
-        width: 12,
-        height: 12,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(2),
-          border: Border.all(
-            color: Colors.black.withValues(alpha: 0.15),
-            width: 0.5,
-          ),
-        ),
-      ),
-      Text(hex),
-    ],
-  );
-}
-
 class BoxInfoPanelWidget extends StatelessWidget {
   const BoxInfoPanelWidget({
     Key? key,
@@ -170,7 +146,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
           ),
       ];
 
-  List<_PropSpec> _spanProps(TextStyle style) => [
+  List<_PropSpec> _spanProps(BuildContext context, TextStyle style) => [
         if (style.fontFamily != null)
           (
             icon: Icons.font_download,
@@ -199,7 +175,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
           (
             icon: Icons.color_lens,
             subtitle: 'color',
-            child: _colorSwatch(style.color!)
+            child: _colorSwatch(context, style.color!)
           ),
         if (style.height != null)
           (
@@ -229,16 +205,16 @@ class BoxInfoPanelWidget extends StatelessWidget {
           (
             icon: Icons.format_color_fill,
             subtitle: 'bg color',
-            child: _colorSwatch(style.backgroundColor!)
+            child: _colorSwatch(context, style.backgroundColor!)
           ),
       ];
 
-  List<_PropSpec> _decorationProps(BoxDecoration d) => [
+  List<_PropSpec> _decorationProps(BuildContext context, BoxDecoration d) => [
         if (d.color != null)
           (
             icon: Icons.palette,
             subtitle: 'color',
-            child: _colorSwatch(d.color!)
+            child: _colorSwatch(context, d.color!)
           ),
         if (d.borderRadius != null)
           (
@@ -252,23 +228,18 @@ class BoxInfoPanelWidget extends StatelessWidget {
             subtitle: 'shape',
             child: Text(d.shape.name)
           ),
-        if (d.border != null)
-          (
-            icon: Icons.border_all,
-            subtitle: 'border',
-            child: Text(_formatBorder(d.border!))
-          ),
+        if (d.border != null) ..._borderProps(context, d.border!),
         if (d.boxShadow != null && d.boxShadow!.isNotEmpty)
           (
             icon: Icons.blur_on,
             subtitle: 'shadows',
-            child: Text(_formatShadows(d.boxShadow!))
+            child: _shadowsWidget(context, d.boxShadow!)
           ),
         if (d.gradient != null)
           (
             icon: Icons.gradient,
             subtitle: 'gradient',
-            child: Text(_formatGradient(d.gradient!))
+            child: _gradientWidget(context, d.gradient!)
           ),
       ];
 
@@ -302,7 +273,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
           ),
       ];
 
-  List<_PropSpec> _imageProps(RenderImage target) => [
+  List<_PropSpec> _imageProps(BuildContext context, RenderImage target) => [
         if (target.fit != null)
           (
             icon: Icons.fit_screen,
@@ -336,7 +307,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
           (
             icon: Icons.color_lens,
             subtitle: 'color tint',
-            child: _colorSwatch(target.color!)
+            child: _colorSwatch(context, target.color!)
           ),
       ];
 
@@ -348,6 +319,47 @@ class BoxInfoPanelWidget extends StatelessWidget {
         ),
       ];
 
+  // ─── Color helpers ────────────────────────────────────────────
+
+  Widget _colorDot(Color color) => Container(
+        width: 12,
+        height: 12,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(2),
+          border: Border.all(
+            color: Colors.black.withValues(alpha: 0.15),
+            width: 0.5,
+          ),
+        ),
+      );
+
+  Widget _colorSwatch(BuildContext context, Color color) {
+    final hex = '#${colorToHexString(color, withAlpha: true)}';
+    return GestureDetector(
+      onTap: () {
+        Clipboard.setData(ClipboardData(text: hex));
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              spacing: 8,
+              children: [
+                _colorDot(color),
+                Text('Copied $hex'),
+              ],
+            ),
+          ),
+        );
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 4.0,
+        children: [_colorDot(color), Text(hex)],
+      ),
+    );
+  }
+
   // ─── Format helpers ───────────────────────────────────────────
 
   String _formatBorderRadius(BorderRadiusGeometry geometry) {
@@ -356,36 +368,102 @@ class BoxInfoPanelWidget extends StatelessWidget {
     return '${f(r.topLeft.x)}, ${f(r.topRight.x)}, ${f(r.bottomRight.x)}, ${f(r.bottomLeft.x)}';
   }
 
-  String _formatBorder(BoxBorder border) {
-    if (border is Border) {
-      final widths = [border.top, border.right, border.bottom, border.left]
-          .map((s) => s.width)
-          .toSet();
-      final w = widths.length == 1
-          ? widths.first.toStringAsFixed(1)
-          : [border.top, border.right, border.bottom, border.left]
-              .map((s) => s.width.toStringAsFixed(1))
-              .join('/');
-      return 'w:$w';
+  List<_PropSpec> _borderProps(BuildContext context, BoxBorder border) {
+    if (border is! Border) {
+      return [
+        (
+          icon: Icons.border_all,
+          subtitle: 'border',
+          child: Text(border.runtimeType.toString()),
+        ),
+      ];
     }
-    return border.runtimeType.toString();
+
+    final sides = [border.top, border.right, border.bottom, border.left];
+    final widths = sides.map((s) => s.width).toSet();
+    final activeSides = sides.where((s) => s.width > 0).toList();
+    final colors = activeSides.map((s) => s.color).toSet();
+
+    // Uniform border — single chip with color swatch + width
+    if (colors.length <= 1 && activeSides.isNotEmpty) {
+      final wStr = widths.length == 1
+          ? 'w:${widths.first.toStringAsFixed(1)}'
+          : 'w:${sides.map((s) => s.width.toStringAsFixed(1)).join('/')}';
+      return [
+        (
+          icon: Icons.border_all,
+          subtitle: 'border',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 4,
+            children: [_colorSwatch(context, colors.first), Text(wStr)],
+          ),
+        ),
+      ];
+    }
+
+    // Non-uniform border — one chip per active side
+    const sideLabels = ['T', 'R', 'B', 'L'];
+    return [
+      for (var i = 0; i < sides.length; i++)
+        if (sides[i].width > 0)
+          (
+            icon: Icons.border_all,
+            subtitle: 'border ${sideLabels[i]}',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 4,
+              children: [
+                _colorSwatch(context, sides[i].color),
+                Text('w:${sides[i].width.toStringAsFixed(1)}'),
+              ],
+            ),
+          ),
+    ];
   }
 
-  String _formatShadows(List<BoxShadow> shadows) {
+  Widget _shadowsWidget(BuildContext context, List<BoxShadow> shadows) {
     if (shadows.length == 1) {
-      return 'blur:${shadows.first.blurRadius.toStringAsFixed(1)}';
+      final s = shadows.first;
+      final dx = s.offset.dx.toStringAsFixed(1);
+      final dy = s.offset.dy.toStringAsFixed(1);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _colorSwatch(context, s.color),
+          Text('blur:${s.blurRadius.toStringAsFixed(1)} ($dx,$dy)'),
+        ],
+      );
     }
-    return '${shadows.length}×';
+    final maxBlur =
+        shadows.map((s) => s.blurRadius).reduce((a, b) => a > b ? a : b);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final s in shadows) _colorSwatch(context, s.color),
+        Text('${shadows.length}× blur:${maxBlur.toStringAsFixed(1)}'),
+      ],
+    );
   }
 
-  String _formatGradient(Gradient g) {
-    final (type, count) = switch (g) {
-      LinearGradient() => ('linear', g.colors.length),
-      RadialGradient() => ('radial', g.colors.length),
-      SweepGradient() => ('sweep', g.colors.length),
-      _ => (g.runtimeType.toString(), 0),
+  Widget _gradientWidget(BuildContext context, Gradient g) {
+    final (type, colors) = switch (g) {
+      LinearGradient() => ('linear', g.colors),
+      RadialGradient() => ('radial', g.colors),
+      SweepGradient() => ('sweep', g.colors),
+      _ => (g.runtimeType.toString(), <Color>[]),
     };
-    return count > 0 ? '$type ($count)' : type;
+    if (colors.isEmpty) return Text(type);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final c in colors) _colorSwatch(context, c),
+        Text(type),
+      ],
+    );
   }
 
   // ─── Decorated box detection ──────────────────────────────────
@@ -439,7 +517,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
             '${displaySize.width.toStringAsFixed(1)} × ${displaySize.height.toStringAsFixed(1)}',
           ),
         ),
-        if (boxInfo.containerRect != null)
+        if (boxInfo.containerRect != null && !boxInfo.isContainerFlex)
           _buildInfoRow(
             context,
             icon: Icons.straighten,
@@ -485,7 +563,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
   Widget _buildParagraphSection(BuildContext context, RenderParagraph target) {
     final dividerColor = Theme.of(context).colorScheme.outlineVariant;
     final spanSections = _extractTextStyles(target.text)
-        .map(_spanProps)
+        .map((s) => _spanProps(context, s))
         .where((p) => p.isNotEmpty)
         .toList();
     return Column(
@@ -540,7 +618,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
       return _buildSection(context, _flexProps(target));
     }
     if (target is RenderImage) {
-      return _buildSection(context, _imageProps(target));
+      return _buildSection(context, _imageProps(context, target));
     }
     if (target is RenderOpacity) {
       return _buildSection(context, _opacityProps(target));
@@ -551,13 +629,13 @@ class BoxInfoPanelWidget extends StatelessWidget {
         (
           icon: Icons.palette,
           subtitle: 'color',
-          child: _colorSwatch(coloredBoxColor)
+          child: _colorSwatch(context, coloredBoxColor)
         ),
       ]);
     }
     final decorated = _findDecoratedBoxForDisplay();
     if (decorated?.decoration case final BoxDecoration d) {
-      return _buildSection(context, _decorationProps(d));
+      return _buildSection(context, _decorationProps(context, d));
     }
     return null;
   }
