@@ -50,12 +50,12 @@ class BoxInfo {
 
     for (final box in boxes) {
       if (box.size.isSmallerThan(targetRenderBox.size)) {
-        // Strictly smaller always wins.
         targetRenderBox = box;
       } else if (box.size == targetRenderBox.size) {
-        // Same size: update unless it would downgrade from meaningful → plain.
-        final downgrade = isMeaningful(targetRenderBox) && !isMeaningful(box);
-        if (!downgrade) targetRenderBox = box;
+        // On a tie, only update when the new box is meaningful:
+        // non→non keeps the first hit (e.g. _RenderColoredBox before RenderPadding),
+        // meaningful→non is skipped, and meaningful→meaningful prefers the innermost.
+        if (isMeaningful(box)) targetRenderBox = box;
       }
     }
 
