@@ -120,7 +120,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
           _buildInfoRow(
             context,
             icon: d.icon,
-            subtitle: 'distance',
+            subtitle: d.side.name,
             backgroundColor: theme.chipTheme.backgroundColor,
             child: Text(d.value.toStringAsFixed(1)),
           ),
