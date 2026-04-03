@@ -3,10 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inspector/inspector.dart';
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 Widget _buildApp({
   List<LogicalKeyboardKey>? inspectorShortcuts,
   List<LogicalKeyboardKey>? inspectAndCompareShortcuts,
@@ -45,27 +41,13 @@ InspectorMode _mode(WidgetTester tester) => tester
     .modeNotifier
     .value;
 
-// Zoom and colorPicker modes trigger async GPU work (boundary.toImage /
-// toByteData). These are platform-level callbacks that pumpAndSettle cannot
-// drain on its own. Call this helper at the end of any test that activates
-// those modes so the work completes while the widget is still mounted,
-// preventing "ValueNotifier used after dispose" errors.
 Future<void> _drainScreenshotCapture(WidgetTester tester) async {
-  await tester.pump(); // fires addPostFrameCallback → starts _extractByteData
-  await tester.runAsync(() async {}); // lets platform callbacks complete
-  await tester.pump(); // process any pending frame work
+  await tester.pump();
+  await tester.runAsync(() async {});
+  await tester.pump();
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 void main() {
-  // We use LogicalKeyboardKey.control as the modifier throughout most tests.
-  // It satisfies the hasModifier guard (present in _modifierKeys) but is NOT
-  // in the default inspectorShortcuts list, so pressing it alone won't
-  // accidentally activate inspector mode and pollute assertions.
-
   group('modifier guard — inspectAndCompare (keyY)', () {
     testWidgets(
       'given no modifier held, when keyY pressed, then mode stays none',
@@ -91,7 +73,7 @@ void main() {
         // Given
         await tester.pumpWidget(_buildApp());
 
-        // When – mode changes synchronously via KeyboardHandler
+        // When
         await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
         await tester.sendKeyDownEvent(LogicalKeyboardKey.keyY);
 
@@ -151,7 +133,7 @@ void main() {
         // Given
         await tester.pumpWidget(_buildApp());
 
-        // When – mode changes synchronously
+        // When
         await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
         await tester.sendKeyDownEvent(LogicalKeyboardKey.keyZ);
 
@@ -213,7 +195,7 @@ void main() {
         // Given
         await tester.pumpWidget(_buildApp());
 
-        // When – mode changes synchronously
+        // When
         await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
 
         // Then
@@ -232,7 +214,7 @@ void main() {
     testWidgets(
       'given custom key F1, control+keyY does not activate inspectAndCompare',
       (tester) async {
-        // Given – F1 replaces default keyY
+        // Given
         await tester.pumpWidget(
           _buildApp(inspectAndCompareShortcuts: const [LogicalKeyboardKey.f1]),
         );
@@ -263,7 +245,7 @@ void main() {
         await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
         await tester.sendKeyDownEvent(LogicalKeyboardKey.f1);
 
-        // Then – check synchronously; inspectAndCompare has no screenshot
+        // Then – check before pump; inspectAndCompare has no screenshot capture
         expect(_mode(tester), InspectorMode.inspectAndCompare);
 
         await tester.sendKeyUpEvent(LogicalKeyboardKey.f1);
@@ -320,12 +302,12 @@ void main() {
     testWidgets(
       'given custom key F3, control+keyZ does not activate zoom',
       (tester) async {
-        // Given – F3 replaces default keyZ
+        // Given
         await tester.pumpWidget(
           _buildApp(zoomShortcuts: const [LogicalKeyboardKey.f3]),
         );
 
-        // When – press old default with a modifier
+        // When – press the old default with a modifier
         await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
         await tester.sendKeyDownEvent(LogicalKeyboardKey.keyZ);
         await tester.pump();
@@ -347,7 +329,7 @@ void main() {
           _buildApp(zoomShortcuts: const [LogicalKeyboardKey.f3]),
         );
 
-        // When – mode changes synchronously
+        // When
         await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
         await tester.sendKeyDownEvent(LogicalKeyboardKey.f3);
 
@@ -390,7 +372,7 @@ void main() {
           _buildApp(colorPickerShortcuts: const [LogicalKeyboardKey.f4]),
         );
 
-        // When – mode changes synchronously
+        // When
         await tester.sendKeyDownEvent(LogicalKeyboardKey.f4);
 
         // Then
