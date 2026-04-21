@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:inspector/inspector.dart';
 
@@ -23,7 +26,7 @@ class ShowcaseApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 5,
+      length: 8,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Inspector Showcase'),
@@ -35,6 +38,9 @@ class ShowcaseApp extends StatelessWidget {
               Tab(text: 'Decoration'),
               Tab(text: 'Spacing'),
               Tab(text: 'Mixed'),
+              Tab(text: 'Transform & Clip'),
+              Tab(text: 'Fields'),
+              Tab(text: 'Images'),
             ],
           ),
         ),
@@ -45,6 +51,9 @@ class ShowcaseApp extends StatelessWidget {
             _DecorationTab(),
             _SpacingTab(),
             _MixedTab(),
+            _TransformClipTab(),
+            _FieldsTab(),
+            _ImagesTab(),
           ],
         ),
       ),
@@ -809,6 +818,500 @@ class _Badge extends StatelessWidget {
           color: color,
           letterSpacing: 0.3,
         ),
+      ),
+    );
+  }
+}
+
+// ─── Transform & Clip ─────────────────────────────────────────────────────────
+
+class _TransformClipTab extends StatelessWidget {
+  const _TransformClipTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 24,
+        children: [
+          const Text('Transform.rotate / scale / translate'),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              _LabelledTile(
+                label: 'rotate 15°',
+                child: Transform.rotate(
+                  angle: 15 * math.pi / 180,
+                  child: _SolidBox(color: Colors.red.shade300),
+                ),
+              ),
+              _LabelledTile(
+                label: 'scale 1.3',
+                child: Transform.scale(
+                  scale: 1.3,
+                  child: _SolidBox(color: Colors.green.shade300),
+                ),
+              ),
+              _LabelledTile(
+                label: 'translate (8, -6)',
+                child: Transform.translate(
+                  offset: const Offset(8, -6),
+                  child: _SolidBox(color: Colors.blue.shade300),
+                ),
+              ),
+              _LabelledTile(
+                label: 'rotate + scale',
+                child: Transform.rotate(
+                  angle: -20 * math.pi / 180,
+                  child: Transform.scale(
+                    scale: 1.1,
+                    child: _SolidBox(color: Colors.orange.shade300),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Divider(),
+          const Text('Clip variants'),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              _LabelledTile(
+                label: 'ClipRRect',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: _SolidBox(color: Colors.pink.shade300),
+                ),
+              ),
+              _LabelledTile(
+                label: 'ClipOval',
+                child: ClipOval(
+                  child: _SolidBox(color: Colors.indigo.shade300),
+                ),
+              ),
+              _LabelledTile(
+                label: 'ClipRect hardEdge',
+                child: ClipRect(
+                  clipBehavior: Clip.hardEdge,
+                  child: _SolidBox(color: Colors.teal.shade300),
+                ),
+              ),
+              _LabelledTile(
+                label: 'ClipPath (star)',
+                child: ClipPath(
+                  clipper: _StarClipper(),
+                  child: _SolidBox(color: Colors.amber.shade400),
+                ),
+              ),
+              _LabelledTile(
+                label: 'elliptical radius',
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.elliptical(32, 12),
+                    bottomRight: Radius.elliptical(32, 12),
+                  ),
+                  child: _SolidBox(color: Colors.deepPurple.shade300),
+                ),
+              ),
+            ],
+          ),
+          const Divider(),
+          const Text('BackdropFilter'),
+          Stack(
+            children: [
+              Container(
+                height: 120,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.red,
+                      Colors.amber,
+                      Colors.green,
+                      Colors.blue
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                      child: Container(
+                        width: 160,
+                        height: 60,
+                        alignment: Alignment.center,
+                        color: Colors.white.withValues(alpha: 0.2),
+                        child: const Text(
+                          'Blurred',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Divider(),
+          const Text('Shadow with spreadRadius'),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              _LabelledTile(
+                label: 'spread: 0',
+                child: Container(
+                  width: 80,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              _LabelledTile(
+                label: 'spread: 4',
+                child: Container(
+                  width: 80,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.indigo.withValues(alpha: 0.35),
+                        blurRadius: 8,
+                        spreadRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              _LabelledTile(
+                label: 'spread: -4 (inset-ish)',
+                child: Container(
+                  width: 80,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.green.withValues(alpha: 0.4),
+                        blurRadius: 10,
+                        spreadRadius: -4,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Divider(),
+          const Text('Gradient variants'),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              _LabelledTile(
+                label: 'linear + stops',
+                child: Container(
+                  width: 100,
+                  height: 60,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.red, Colors.yellow, Colors.blue],
+                      stops: [0.0, 0.4, 1.0],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                  ),
+                ),
+              ),
+              _LabelledTile(
+                label: 'radial + tile',
+                child: Container(
+                  width: 100,
+                  height: 60,
+                  decoration: const BoxDecoration(
+                    gradient: RadialGradient(
+                      colors: [Colors.white, Colors.black],
+                      radius: 0.3,
+                      tileMode: TileMode.mirror,
+                    ),
+                  ),
+                ),
+              ),
+              _LabelledTile(
+                label: 'sweep',
+                child: Container(
+                  width: 100,
+                  height: 60,
+                  decoration: const BoxDecoration(
+                    gradient: SweepGradient(
+                      colors: [
+                        Colors.red,
+                        Colors.orange,
+                        Colors.yellow,
+                        Colors.green,
+                        Colors.blue,
+                        Colors.purple,
+                        Colors.red,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SolidBox extends StatelessWidget {
+  const _SolidBox({required this.color});
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 72,
+      height: 72,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: color),
+      child: const Text('box'),
+    );
+  }
+}
+
+class _LabelledTile extends StatelessWidget {
+  const _LabelledTile({required this.label, required this.child});
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(height: 80, width: 100, child: Center(child: child)),
+        const SizedBox(height: 6),
+        Text(label, style: const TextStyle(fontSize: 11)),
+      ],
+    );
+  }
+}
+
+class _StarClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final outer = size.shortestSide / 2;
+    final inner = outer / 2.5;
+    const pts = 5;
+    for (var i = 0; i < pts * 2; i++) {
+      final r = i.isEven ? outer : inner;
+      final a = -math.pi / 2 + i * math.pi / pts;
+      final x = cx + r * math.cos(a);
+      final y = cy + r * math.sin(a);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+// ─── Fields ───────────────────────────────────────────────────────────────────
+
+class _FieldsTab extends StatelessWidget {
+  const _FieldsTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 16,
+        children: [
+          const Text('TextField (RenderEditable)'),
+          const TextField(
+            decoration: InputDecoration(
+              labelText: 'Plain field',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const TextField(
+            obscureText: true,
+            decoration: InputDecoration(
+              labelText: 'Password (obscured)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          TextField(
+            readOnly: true,
+            controller: TextEditingController(text: 'Read-only value'),
+            decoration: const InputDecoration(
+              labelText: 'Read-only',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const TextField(
+            maxLines: 4,
+            decoration: InputDecoration(
+              labelText: 'Multiline (maxLines: 4)',
+              alignLabelWithHint: true,
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const TextField(
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2,
+              color: Colors.deepPurple,
+            ),
+            decoration: InputDecoration(
+              labelText: 'Styled centered',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const Divider(),
+          const Text('RichText with recognizer / long preview'),
+          RichText(
+            text: TextSpan(
+              style: DefaultTextStyle.of(context).style,
+              children: const [
+                TextSpan(text: 'Inspect this long paragraph to see '),
+                TextSpan(
+                  text: 'preview truncation',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+                TextSpan(
+                  text: ' and span style extraction across multiple styled '
+                      'segments — this should be long enough to trigger the '
+                      'ellipsis on the preview line of the info panel.',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Images ───────────────────────────────────────────────────────────────────
+
+class _ImagesTab extends StatelessWidget {
+  const _ImagesTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 24,
+        children: [
+          const Text('RenderImage — network source'),
+          Image.network(
+            'https://picsum.photos/seed/inspector/300/160',
+            width: 300,
+            height: 160,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              width: 300,
+              height: 160,
+              color: Colors.grey.shade300,
+              alignment: Alignment.center,
+              child: const Text('network image unavailable'),
+            ),
+          ),
+          const Text('RenderImage with color tint'),
+          Image.network(
+            'https://picsum.photos/seed/tint/200/120',
+            width: 200,
+            height: 120,
+            fit: BoxFit.cover,
+            color: Colors.deepOrange,
+            colorBlendMode: BlendMode.modulate,
+            errorBuilder: (_, __, ___) => Container(
+              width: 200,
+              height: 120,
+              color: Colors.grey.shade300,
+            ),
+          ),
+          const Text('DecorationImage (BoxDecoration.image)'),
+          Container(
+            width: 300,
+            height: 120,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              image: const DecorationImage(
+                image: NetworkImage(
+                  'https://picsum.photos/seed/deco/600/240',
+                ),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  Colors.black38,
+                  BlendMode.darken,
+                ),
+              ),
+            ),
+            alignment: Alignment.center,
+            child: const Text(
+              'Overlay content',
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            ),
+          ),
+          const Text('Repeated pattern'),
+          Container(
+            width: 300,
+            height: 80,
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: NetworkImage(
+                  'https://picsum.photos/seed/tile/60/60',
+                ),
+                repeat: ImageRepeat.repeat,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

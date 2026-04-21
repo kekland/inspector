@@ -42,6 +42,7 @@ class BoxInfo {
         box is RenderClipRRect ||
         box is RenderClipRSuperellipse ||
         box is RenderClipOval ||
+        box is RenderClipPath ||
         box is RenderCustomPaint ||
         box is RenderTransform ||
         box is RenderFittedBox ||
