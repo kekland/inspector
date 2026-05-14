@@ -162,91 +162,45 @@ class BoxInfoPanelWidget extends StatelessWidget {
     return '${f(resolved.topLeft.x)}, ${f(resolved.topRight.x)}, ${f(resolved.bottomRight.x)}, ${f(resolved.bottomLeft.x)}';
   }
 
-  RenderDecoratedBox? _findSelectedDecoratedBox() {
-    final target = boxInfo.targetRenderBox;
-    return target is RenderDecoratedBox ? target : null;
+  BorderRadiusGeometry? _extractBorderRadiusFromShape(ShapeBorder shape) {
+    if (shape is RoundedRectangleBorder) return shape.borderRadius;
+    if (shape is ContinuousRectangleBorder) return shape.borderRadius;
+    if (shape is BeveledRectangleBorder) return shape.borderRadius;
+    return null;
   }
 
-  RenderDecoratedBox? _findNearestDecoratedBoxFromHitTestPath() {
-    // When tapping a Container, the selected RenderBox might be a child
-    // (e.g. alignment/padding) instead of the RenderDecoratedBox itself.
-    // Use the hitTestPath to locate the nearest decorated box in the same
-    // subtree under the pointer.
-    for (final box in boxInfo.hitTestPath) {
-      if (box.size != boxInfo.targetRect.size) return null;
-      if (box is RenderDecoratedBox) return box;
+  BorderRadiusGeometry? _getDecorationBorderRadius(Decoration decoration) {
+    if (decoration is BoxDecoration) return decoration.borderRadius;
+    if (decoration is ShapeDecoration) {
+      return _extractBorderRadiusFromShape(decoration.shape);
     }
     return null;
   }
 
-  RenderDecoratedBox? _findChildDecoratedBoxFromTarget() {
-    final target = boxInfo.targetRenderBox;
-    if (target is RenderProxyBoxMixin) {
-      final child = target.child;
-      if (child != null &&
-          child.size == target.size &&
-          child is RenderDecoratedBox) {
-        return child;
-      }
-    }
+  Color? _getDecorationColor(Decoration decoration) {
+    if (decoration is BoxDecoration) return decoration.color;
+    if (decoration is ShapeDecoration) return decoration.color;
     return null;
   }
 
-  RenderDecoratedBox? _findDecoratedBoxForDisplay() {
-    // Prefer the selected render object when it is decorated; otherwise, fall
-    // back to the nearest decorated box under the pointer.
-    return _findSelectedDecoratedBox() ??
-        _findNearestDecoratedBoxFromHitTestPath() ??
-        _findChildDecoratedBoxFromTarget();
-  }
-
-  bool _hasSelectedDecoratedInfo() {
-    // Selection-first policy: never show decoration info when the selected box
-    // is a RenderParagraph (text selection should focus on text).
-    if (boxInfo.targetRenderBox is RenderParagraph) return false;
-
-    final decorated = _findDecoratedBoxForDisplay();
-    if (decorated == null) return false;
-
-    final d = decorated.decoration;
-    if (d is! BoxDecoration) return false;
-
-    return d.color != null ||
-        d.borderRadius != null ||
-        d.shape != BoxShape.rectangle ||
-        d.border != null ||
-        d.boxShadow != null ||
-        d.gradient != null;
-  }
-
-  Widget _buildRenderDecoratedBoxInfo(BuildContext context) {
+  Widget _buildDecorationInfoRows(
+    BuildContext context, {
+    BorderRadiusGeometry? borderRadius,
+    Color? color,
+  }) {
     final theme = Theme.of(context);
-
-    final renderDecoratedBox = _findDecoratedBoxForDisplay();
-    if (renderDecoratedBox == null) return const SizedBox.shrink();
-
-    final decoration = renderDecoratedBox.decoration;
-    if (decoration is! BoxDecoration) return const SizedBox.shrink();
 
     return Wrap(
       spacing: 12.0,
       runSpacing: 8.0,
       children: [
-        if (decoration.borderRadius != null)
+        if (borderRadius != null)
           _buildInfoRow(
             context,
             icon: Icons.rounded_corner,
             subtitle: 'border radius (LTRB)',
             backgroundColor: theme.chipTheme.backgroundColor,
-            child: Text(_formatBorderRadiusLTRB(decoration.borderRadius!)),
-          ),
-        if (decoration.shape != BoxShape.rectangle)
-          _buildInfoRow(
-            context,
-            icon: Icons.circle_outlined,
-            subtitle: 'shape',
-            backgroundColor: theme.chipTheme.backgroundColor,
-            child: Text(decoration.shape.toString()),
+            child: Text(_formatBorderRadiusLTRB(borderRadius)),
           ),
         _buildInfoRow(
           context,
@@ -254,12 +208,122 @@ class BoxInfoPanelWidget extends StatelessWidget {
           subtitle: 'color',
           backgroundColor: theme.chipTheme.backgroundColor,
           child: Text(
-            decoration.color != null
-                ? '#${colorToHexString(decoration.color!, withAlpha: true)}'
+            color != null
+                ? '#${colorToHexString(color, withAlpha: true)}'
                 : 'n/a',
           ),
         ),
       ],
+    );
+  }
+
+  RenderDecoratedBox? _findSelectedDecoratedBox() {
+    final target = boxInfo.targetRenderBox;
+    return target is RenderDecoratedBox ? target : null;
+  }
+
+  RenderDecoratedBox? _findParentDecoratedBox() {
+    // Try to find a RenderDecoratedBox parent by walking up the render tree
+    var current = boxInfo.targetRenderBox.parent;
+    while (current != null) {
+      if (current is RenderDecoratedBox) {
+        return current;
+      }
+      current = current.parent;
+      // Safety limit to avoid infinite loops
+      if (current is RenderView) break;
+    }
+    return null;
+  }
+
+  RenderDecoratedBox? _findNearestDecoratedBoxFromHitTestPath() {
+    // When tapping a Container, the selected RenderBox might be a child
+    // (e.g. alignment/padding) instead of the RenderDecoratedBox itself.
+    // Use the hitTestPath to locate the first decorated box found.
+    for (final box in boxInfo.hitTestPath) {
+      if (box is RenderDecoratedBox) return box;
+    }
+    return null;
+  }
+
+  RenderDecoratedBox? _findChildDecoratedBoxFromTarget() {
+    final target = boxInfo.targetRenderBox;
+
+    // Recursive helper to walk the render tree
+    RenderDecoratedBox? findDecoratedInSubtree(RenderBox? box) {
+      if (box == null) return null;
+      if (box is RenderDecoratedBox) return box;
+      if (box is RenderProxyBoxMixin) {
+        return findDecoratedInSubtree(box.child);
+      }
+      return null;
+    }
+
+    // If target is already decorated, return it
+    if (target is RenderDecoratedBox) return target;
+
+    // Otherwise, search in children
+    if (target is RenderProxyBoxMixin) {
+      return findDecoratedInSubtree(target.child);
+    }
+
+    return null;
+  }
+
+  RenderDecoratedBox? _findDecoratedBoxForDisplay() {
+    // Prefer the selected render object when it is decorated; otherwise, fall
+    // back to nearest decorated box in various locations: parents, hitTestPath, or children.
+    return _findSelectedDecoratedBox() ??
+        _findParentDecoratedBox() ??
+        _findNearestDecoratedBoxFromHitTestPath() ??
+        _findChildDecoratedBoxFromTarget();
+  }
+
+  bool _hasSelectedDecoratedInfo(RenderDecoratedBox? decorated) {
+    // Selection-first policy: never show decoration info when the selected box
+    // is a RenderParagraph (text selection should focus on text).
+    if (boxInfo.targetRenderBox is RenderParagraph) return false;
+
+    if (decorated == null) return false;
+
+    final d = decorated.decoration;
+
+    if (d is BoxDecoration) {
+      return d.color != null ||
+          d.borderRadius != null ||
+          d.shape != BoxShape.rectangle ||
+          d.border != null ||
+          d.boxShadow != null ||
+          d.gradient != null;
+    }
+
+    if (d is ShapeDecoration) {
+      return d.color != null ||
+          d.image != null ||
+          d.gradient != null ||
+          (d.shadows?.isNotEmpty ?? false) ||
+          d.shape != const RoundedRectangleBorder() ||
+          _getDecorationBorderRadius(d) != null;
+    }
+
+    return false;
+  }
+
+  Widget _buildRenderDecoratedBoxInfo(
+    BuildContext context,
+    RenderDecoratedBox? renderDecoratedBox,
+  ) {
+    if (renderDecoratedBox == null) return const SizedBox.shrink();
+
+    final decoration = renderDecoratedBox.decoration;
+    if (decoration is! BoxDecoration && decoration is! ShapeDecoration) {
+      return const SizedBox.shrink();
+    }
+
+    return _buildDecorationInfoRows(
+      context,
+      borderRadius: _getDecorationBorderRadius(decoration),
+      color: _getDecorationColor(decoration),
     );
   }
 
@@ -367,8 +431,10 @@ class BoxInfoPanelWidget extends StatelessWidget {
 
     final target = boxInfo.targetRenderBox;
     final isSelectedParagraph = target is RenderParagraph;
+    final decoratedBox =
+        !isSelectedParagraph ? _findDecoratedBoxForDisplay() : null;
     final hasSelectedDecoration =
-        !isSelectedParagraph && _hasSelectedDecoratedInfo();
+        decoratedBox != null && _hasSelectedDecoratedInfo(decoratedBox);
 
     return Card(
       child: SizedBox(
@@ -425,7 +491,7 @@ class BoxInfoPanelWidget extends StatelessWidget {
                   height: 16.0,
                   color: theme.dividerColor,
                 ),
-                _buildRenderDecoratedBoxInfo(context),
+                _buildRenderDecoratedBoxInfo(context, decoratedBox),
               ],
             ],
           ),
