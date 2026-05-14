@@ -20,15 +20,23 @@ class BoxInfo {
   }) {
     final hitTestPath = List<RenderBox>.unmodifiable(boxes);
 
-    RenderBox targetRenderBox = boxes.first;
+    /// Best-match strategy combining two criteria:
+    ///   1. Smallest area  → most visually precise box under the pointer.
+    ///   2. Deepest in tree as tiebreaker for equal-area boxes:
+    ///      - If [box] is a descendant of [best] (parent-child), prefer [box]
+    ///        (more specific child wins over its wrapper).
+    ///      - If they are siblings (e.g. two Stack children of same size),
+    ///        prefer [best], which arrived first because [_collectAt] reverses
+    ///        children → foreground (topmost Z-order) is emitted before
+    ///        background, so keeping [best] preserves the correct Stack order.
+    RenderBox targetRenderBox = boxes.reduce((best, box) {
+      final bestArea = best.size.width * best.size.height;
+      final boxArea = box.size.width * box.size.height;
+      if (boxArea < bestArea) return box;
+      if (boxArea == bestArea && box.isDescendantOf(best)) return box;
+      return best;
+    });
     RenderBox? containerRenderBox;
-
-    /// Used [isSmallerThan] to find the smallest box under the cursor
-    for (final box in boxes) {
-      if (box.size.isSmallerThan(targetRenderBox.size)) {
-        targetRenderBox = box;
-      }
-    }
 
     if (findContainer) {
       /// The >= is used to check whether the item is fully contained by the other box.
@@ -76,9 +84,10 @@ class BoxInfo {
   EdgeInsets _calculateOriginalPadding() {
     if (containerRenderBox == null) return EdgeInsets.zero;
 
-    // Get the target's position relative to the container
-    final targetOffset = targetRenderBox.localToGlobal(Offset.zero);
-    final containerOffset = containerRenderBox!.localToGlobal(Offset.zero);
+    // Use targetRect.topLeft (center-based, rotation-invariant) instead of
+    // localToGlobal(Offset.zero) which rotates every frame inside Transform.rotate.
+    final targetTopLeft = targetRect.topLeft;
+    final containerTopLeft = containerRect!.topLeft;
 
     // Calculate scale factor from the transformation
     final scaledTargetSize = targetRect.size;
@@ -88,8 +97,8 @@ class BoxInfo {
         : 1.0;
 
     // Calculate padding in original coordinates
-    final left = (targetOffset.dx - containerOffset.dx) / scale;
-    final top = (targetOffset.dy - containerOffset.dy) / scale;
+    final left = (targetTopLeft.dx - containerTopLeft.dx) / scale;
+    final top = (targetTopLeft.dy - containerTopLeft.dy) / scale;
     final right =
         containerRenderBox!.size.width - originalTargetSize.width - left;
     final bottom =
@@ -167,12 +176,27 @@ class BoxInfo {
 Rect? getRectFromRenderBox(RenderBox renderBox) {
   if (!renderBox.attached) return null;
 
-  final topLeft = renderBox.localToGlobal(Offset.zero);
-  final bottomRight = renderBox.localToGlobal(
-    Offset(renderBox.size.width, renderBox.size.height),
+  // Anchor on the center instead of corners: the center is invariant under
+  // Transform.rotate, keeping the overlay rect stable during animations.
+  // Half-dimensions are measured as center-to-edge distances so that
+  // Transform.scale is still reflected in the visual rect size.
+  final center = renderBox.localToGlobal(renderBox.size.center(Offset.zero));
+
+  final rightCenter = renderBox.localToGlobal(
+    Offset(renderBox.size.width, renderBox.size.height / 2),
+  );
+  final bottomCenter = renderBox.localToGlobal(
+    Offset(renderBox.size.width / 2, renderBox.size.height),
   );
 
-  return Rect.fromPoints(topLeft, bottomRight);
+  final halfWidth = (rightCenter - center).distance;
+  final halfHeight = (bottomCenter - center).distance;
+
+  return Rect.fromCenter(
+    center: center,
+    width: halfWidth * 2,
+    height: halfHeight * 2,
+  );
 }
 
 double calculateBoxPosition({

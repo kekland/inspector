@@ -27,12 +27,20 @@ class InspectorUtils {
     RenderObject renderObject,
     Offset globalOffset,
   ) sync* {
-    if (renderObject is RenderBox) {
-      final local = renderObject.globalToLocal(globalOffset);
+    if (renderObject is RenderBox && renderObject.hasSize) {
+      final globalRect = MatrixUtils.transformRect(
+        renderObject.getTransformTo(null),
+        Offset.zero & renderObject.size,
+      );
 
-      if ((Offset.zero & renderObject.size).contains(local)) {
-        yield renderObject;
-      }
+      // Skip non-visible render objects (e.g. empty bounds or invalid transforms).
+      // Also prune subtrees whose global bounds do not contain the target point,
+      // since their descendants cannot intersect it under normal non-overflowing
+      // layouts.
+      if (!globalRect.isFinite || globalRect.isEmpty) return;
+      if (!globalRect.contains(globalOffset)) return;
+
+      yield renderObject;
     }
 
     final children = <RenderObject>[];
